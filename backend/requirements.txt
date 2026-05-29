@@ -7,3 +7,4 @@ sentence-transformers
 pymongo
 requests
 beautifulsoup4
+scikit-learn

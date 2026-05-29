@@ -6,201 +6,146 @@
 USER (Browser)
     │
     ▼
-frontend/src/App.vue          ← Vue 3 SPA (port 5173)
+frontend/src/App.vue          ← Vue 3 SPA (port 5173) with Vue Router
     │
-    │ HTTP POST multipart/form-data
+    │ HTTP POST multipart/form-data / JSON
     ▼
 backend/app/main.py           ← FastAPI entrypoint (port 8000)
     │
-    ▼
-backend/app/api/endpoints.py  ← Route handler
+    ├──► backend/app/api/endpoints.py  ← General API routes
+    ├──► backend/app/api/hr_endpoints.py ← HR API routes
     │
     ├──► backend/app/services/parser.py   ← Text extraction
-    │
-    └──► backend/app/services/nlp.py      ← Similarity + dynamic keywords
+    └──► backend/app/services/nlp.py      ← Hybrid semantic matching (80/20), clustering
               │
-              └──► MongoDB (cv_matcher.linkedin_jobs) ← Data source
+              └──► MongoDB (cv_matcher.linkedin_jobs) ← Data source with stored vectors
 ```
 
 ---
 
-## 1. Data Ingestion (Scraping)
+## 1. Hybrid Semantic Matching Flow (80/20 Weight)
 
 ```
-backend/app/services/linkedin_scraper.py
-    │
-    ├── scrape_linkedin_jobs(keyword, location)
-    │     ├── format URL (LinkedIn guest search)
-    │     ├── requests.get() with random User-Agent
-    │     ├── BeautifulSoup parse <li> elements
-    │     └── upsert to MongoDB (cv_matcher.linkedin_jobs) via PyMongo
-```
-
----
-
-## 2. Startup (Backend)
-
-```
-uvicorn app.main:app
-    │
-    ├── main.py
-    │     ├── FastAPI() instance created
-    │     ├── CORSMiddleware registered → allow_origins=["http://localhost:5173"]
-    │     └── api_router mounted at prefix "/api"
-    │
-    └── services/nlp.py (module-level, runs once on import)
-          ├── SentenceTransformer('all-MiniLM-L6-v2') → model loaded into memory
-          └── MongoClient(MONGO_URI) connects to MongoDB container
+[Match Detailed: CV-JD Analysis]
+  │
+  ├──► extract_text(cv_file) → cv_text
+  ├──► extract_phrases(cv_text) → cv_phrases
+  ├──► extract_phrases(jd_text) → jd_phrases
+  │
+  ├──► Stage 1: CV vs JD Direct Matching (80% weight)
+  │      ├── Compute cosine similarity between cv_phrases × jd_phrases
+  │      ├── If similarity > 0.75 → matched (weight 80%)
+  │      └── If similarity < 0.75 → missing (weight 80%)
+  │
+  ├──► Stage 2: CV vs Master Skills (20% weight)
+  │      ├── Compare cv_phrases against 50+ standard skills
+  │      ├── If skill found in both CV and JD → matched (weight 20%)
+  │      └── If skill required in JD but missing in CV → missing (weight 20%)
+  │
+  ├──► Combine weighted scores
+  │      ├── matched_skills: Top 15 by combined score
+  │      └── missing_skills: Top 15 by combined score
+  │
+  └──► Return similarity score, matched skills, and missing skills
 ```
 
 ---
 
-## 3. Frontend User Interaction
+## 2. Scrape & Recommend Flow (Job Seeker)
 
 ```
-App.vue
-│
-├── handleFileSelect(event)
-│     └── selectedFile.value = event.target.files[0]   ← stores File object
-│
-├── jobDescription.value                                ← v-model bound to textarea
-│
-└── submit()   ← triggered by button click
-      ├── loading.value = true
-      ├── new FormData()
-      │     ├── .append('cv', selectedFile.value)       ← File object
-      │     └── .append('job_description', jobDescription.value)
-      │
-      └── axios.post('http://localhost:8000/api/match', formData)
-                │
-                ▼ (HTTP request crosses to backend)
-```
-
----
-
-## 4. Backend Request Handling
-
-```
-POST /api/match
-    │
-    ▼
-main.py → CORSMiddleware checks Origin header → passes if localhost:5173
-    │
-    ▼
-api/endpoints.py → match_cv_to_job(cv: UploadFile, job_description: str)
-    │
-    ├── await cv.read()
-    │     └── returns: file_bytes (bytes)
-    │
-    ├── extract_text(file_bytes, cv.filename)
-    │     └── → [goes to parser.py]
-    │
-    ├── get_similarity_score(cv_text, job_description)
-    │     └── → [goes to nlp.py]
-    │
-    ├── cv_text + " " + job_description → combined_text
-    │
-    └── extract_keywords(combined_text)
-          └── → [goes to nlp.py]
+[Scrape & Find Matches]
+  │
+  ├──► scrape_linkedin_jobs(keyword, location, time_range)
+  │      ├── Fetch jobs from LinkedIn guest API
+  │      ├── Fetch full job description
+  │      ├── Generate 'description_embedding' via sentence-transformers
+  │      └── Save jobs into MongoDB
+  │
+  ├──► extract_text(cv_file) → cv_text
+  ├──► model.encode(cv_text) → cv_emb
+  ├──► Load jobs from MongoDB matching keyword/location
+  │      ├── Compute cosine similarity: np.dot(cv_emb, job_emb)
+  │      └── Sort jobs by highest similarity
+  │
+  └──► Return Top 5 job recommendations
 ```
 
 ---
 
-## 5. parser.py — Text Extraction
+## 3. Bulk CV Ranking Flow (HR)
 
 ```
-extract_text(file_bytes: bytes, filename: str) → str
-    │
-    ├── ext = filename.split(".")[-1].lower()
-    │
-    ├── ext == "pdf"
-    │     └── extract_text_from_pdf(file_bytes)
-    │               ├── PdfReader(io.BytesIO(file_bytes))
-    │               └── loop pdf.pages → page.extract_text() → concat → return str
-    │
-    ├── ext in ["docx", "doc"]
-    │     └── extract_text_from_docx(file_bytes)
-    │               ├── Document(io.BytesIO(file_bytes))
-    │               └── loop doc.paragraphs → para.text → join("\n") → return str
-    │
-    └── fallback
-          └── file_bytes.decode("utf-8", errors="ignore") → return str
+[Bulk CV Ranking]
+  │
+  └──► Loop through each uploaded CV:
+         ├── extract_text(cv) → cv_text
+         ├── extract_candidate_name(cv_text) → candidate_name
+         ├── get_similarity_score(cv_text, job_description) → score
+         └── Append to rankings list
+  │
+  ├──► Sort candidates by highest score
+  └──► Return ranked candidates list
 ```
 
 ---
 
-## 6. nlp.py — Similarity Scoring
+## 4. Candidate Clustering Flow (HR)
 
 ```
-get_similarity_score(text1: str, text2: str) → float
-    │
-    ├── model.encode(text1, convert_to_tensor=True) → emb1 (tensor)
-    ├── model.encode(text2, convert_to_tensor=True) → emb2 (tensor)
-    ├── util.cos_sim(emb1, emb2).item()             → similarity (float -1.0 to 1.0)
-    └── round(max(0.0, min(1.0, similarity)) * 100, 2) → return float (0.0 to 100.0)
-```
-
----
-
-## 7. nlp.py — Keyword Extraction
-
-```
-extract_keywords(text: str) → dict
-    │
-    ├── get_dynamic_keywords()
-    │     ├── query MongoDB (linkedin_jobs) for job titles
-    │     └── extract unique words → dynamic_skills list
-    │
-    ├── text_lower = text.lower()
-    │
-    ├── match text_lower against dynamic skills patterns → populate skills set
-    ├── match text_lower against static experience patterns → populate experience set
-    └── match text_lower against static education patterns  → populate education set
-          │
-          └── return {
-                "skills":     list(skills),
-                "experience": list(experience),
-                "education":  list(education)
-              }
+[Candidate Clustering]
+  │
+  ├──► Extract texts from all uploaded CVs
+  ├──► cluster_documents(texts, filenames, num_clusters)
+  │      ├── model.encode(texts) → document embeddings
+  │      ├── Run K-Means clustering (sklearn)
+  │      ├── For each cluster, extract phrases and match against master skills
+  │      └── Suggest cluster label: "Skill A / Skill B / Skill C"
+  │
+  └──► Return list of clusters with candidates and suggested labels
 ```
 
 ---
 
-## 8. Response — Backend to Frontend
+## 5. Semantic Job Search Flow
 
 ```
-endpoints.py
-    │
-    └── return {
-          "similarity_score": float,     ← 0.0 to 100.0
-          "insights": {
-            "skills":     [str, ...],
-            "experience": [str, ...],
-            "education":  [str, ...]
-          }
-        }
-              │
-              ▼ (JSON HTTP response)
+[Semantic Job Search]
+  │
+  ├──► model.encode(query) → query_emb
+  ├──► Load all jobs with description embeddings from MongoDB
+  ├──► Compute cosine similarity: np.dot(query_emb, job_emb)
+  ├──► Sort jobs by highest similarity
+  └──► Return Top 5 jobs matching query
 ```
 
 ---
 
-## 9. Frontend Response Handling
+## 6. Hybrid Matching Detailed Breakdown
 
+### Stage 1: CV vs JD Direct (80% weight)
+```python
+for jd_phrase in jd_phrases:
+    cv_similarities = cosine(jd_phrase, all_cv_phrases)
+    if max_similarity > 0.75:
+        matched[jd_phrase] = similarity * 0.80
+    else:
+        missing[jd_phrase] = similarity * 0.80
 ```
-App.vue → submit()
-    │
-    ├── res = await axios.post(...)
-    │     └── res.data = { similarity_score, insights }
-    │
-    ├── result.value = res.data           ← reactive ref updated
-    │
-    └── Vue re-renders template
-          ├── result.similarity_score → progress-bar width (CSS style binding)
-          ├── result.insights.skills  → v-for list render
-          ├── result.insights.experience → v-for list render
-          └── result.insights.education  → v-for list render
 
-    error path:
-    └── catch(e) → error.value = e.response?.data?.detail || fallback string
+### Stage 2: CV vs Master Skills (20% weight)
+```python
+for skill in STANDARD_SKILLS:
+    cv_sim = cosine(skill, cv_phrases)
+    jd_sim = cosine(skill, jd_phrases)
+    
+    if cv_sim > 0.82 and jd_sim > 0.82:
+        matched[skill] = min(cv_sim, jd_sim) * 0.20
+    elif jd_sim > 0.82 and cv_sim <= 0.82:
+        missing[skill] = jd_sim * 0.20
 ```
+
+### Final Ranking
+- Sort matched skills by combined weighted score
+- Sort missing skills by combined weighted score
+- Return top 15 of each
