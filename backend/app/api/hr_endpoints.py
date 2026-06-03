@@ -2,6 +2,8 @@ from fastapi import APIRouter, UploadFile, File, Form
 from typing import List
 from app.services.parser import extract_text, extract_candidate_name
 from app.services.nlp import cluster_documents
+from app.services.nlp import get_similarity_score
+
 
 router = APIRouter()
 
@@ -20,11 +22,6 @@ async def rank_candidates(
         candidate_name = extract_candidate_name(cv_text, cv.filename)
         
         # Calculate similarity score (using simple text comparison for ranking)
-        # Note: For ranking, we can use the semantic similarity logic from nlp.py
-        # But to keep it simple and fast for ranking, we can use the existing get_similarity_score
-        # Let's import it here or use a simple logic.
-        # Actually, let's use the semantic similarity logic from nlp.py
-        from app.services.nlp import get_similarity_score
         similarity_score = get_similarity_score(cv_text, job_description)
         
         candidates.append({

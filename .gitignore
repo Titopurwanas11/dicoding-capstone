@@ -1,4 +1,4 @@
 .opencode/
-# *.md
-# !README.md
+*.md
+!README.md
 .env
