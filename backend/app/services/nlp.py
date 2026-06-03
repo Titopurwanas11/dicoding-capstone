@@ -1,15 +1,26 @@
 import re
-import json
 import os
 from sentence_transformers import SentenceTransformer, util
+from sklearn.cluster import KMeans
+from typing import List, Dict, Any, Tuple
+import numpy as np
 
 # Load model once on startup
-model = SentenceTransformer('all-MiniLM-L6-v2')
+MODEL_USED = os.getenv("MODEL_MAIN")
+model = SentenceTransformer(MODEL_USED)
 
-# Load keywords configuration
-KEYWORDS_FILE = os.path.join(os.path.dirname(__file__), "../core/keywords.json")
-with open(KEYWORDS_FILE, "r") as f:
-    KEYWORDS = json.load(f)
+# Standard skills for hybrid matching (20% weight)
+STANDARD_SKILLS = [
+    "Python", "JavaScript", "TypeScript", "Vue.js", "React", "Angular", "Node.js", "FastAPI", "Flask", "Django",
+    "Docker", "Kubernetes", "SQL", "PostgreSQL", "MySQL", "MongoDB", "Git", "NLP", "Machine Learning", "Deep Learning",
+    "AWS", "GCP", "Azure", "Tailwind CSS", "HTML", "CSS", "Java", "C++", "C#", "Linux", "Bash", "REST API", "GraphQL",
+    "TensorFlow", "PyTorch", "Scikit-Learn", "Pandas", "NumPy", "Apache Spark", "Hadoop", "Kafka", "RabbitMQ", "Redis",
+    "Elasticsearch", "CI/CD", "Jenkins", "Terraform", "Ansible", "Agile", "Scrum", "Next.js", "Express.js"
+]
+
+STANDARD_SKILLS_EMBEDDINGS = {
+    skill: model.encode(skill, convert_to_tensor=True) for skill in STANDARD_SKILLS
+}
 
 def get_similarity_score(text1: str, text2: str) -> float:
     emb1 = model.encode(text1, convert_to_tensor=True)
@@ -17,30 +28,137 @@ def get_similarity_score(text1: str, text2: str) -> float:
     similarity = util.cos_sim(emb1, emb2).item()
     return round(max(0.0, min(1.0, similarity)) * 100, 2)
 
-def extract_keywords(text: str):
-    skills_patterns = [re.compile(r"\b(" + "|".join(re.escape(s) for s in KEYWORDS["skills"]) + r")\b")]
-    experience_patterns = [re.compile(p) for p in KEYWORDS["experience_patterns"]]
-    education_patterns = [re.compile(p) for p in KEYWORDS["education_patterns"]]
+def extract_phrases(text: str) -> List[str]:
+    from app.services.parser import STOPWORDS
+    
+    # Split by common delimiters and extract meaningful phrases
+    phrases = re.split(r'[\n,;\t•|]', text)
+    valid_phrases = []
+    
+    for p in phrases:
+        p = p.strip()
+        if not p or len(p) <= 3:
+            continue
+            
+        # Check if the phrase is purely stopwords
+        words = p.lower().split()
+        if all(w in STOPWORDS for w in words):
+            continue
+            
+        valid_phrases.append(p)
+    
+    # Also extract individual technical words
+    words = re.findall(r'\b[a-zA-Z0-9+#.-]{3,20}\b', text)
+    for w in words:
+        if w.lower() not in STOPWORDS:
+            # Prefer capitalized words or words with technical chars
+            if w[0].isupper() or any(c in w for c in '+#.'):
+                valid_phrases.append(w)
+            
+    # Clean and deduplicate
+    valid_phrases = list(set([p for p in valid_phrases if 3 < len(p) < 100]))
+    return valid_phrases
 
-    skills = set()
-    experience = set()
-    education = set()
+def match_cv_jd_hybrid(cv_text: str, jd_text: str) -> Tuple[List[str], List[str]]:
+    """
+    Hybrid semantic matching with 2 stages:
+    - Stage 1 (80%): Direct CV phrases vs JD phrases comparison
+    - Stage 2 (20%): CV phrases vs Master Skills comparison
+    """
+    cv_phrases = extract_phrases(cv_text)
+    jd_phrases = extract_phrases(jd_text)
+    
+    if not cv_phrases or not jd_phrases:
+        return [], []
+    
+    # Encode all phrases
+    cv_embeddings = model.encode(cv_phrases, convert_to_tensor=True)
+    jd_embeddings = model.encode(jd_phrases, convert_to_tensor=True)
+    
+    # Stage 1: Direct CV vs JD phrase matching (80% weight)
+    matched_from_jd = {}
+    missing_from_jd = {}
+    
+    for jd_idx, jd_phrase in enumerate(jd_phrases):
+        jd_emb = jd_embeddings[jd_idx]
+        similarities = util.cos_sim(jd_emb, cv_embeddings)[0]
+        max_sim = similarities.max().item()
+        
+        if max_sim > 0.75:  # High similarity threshold for direct matching
+            matched_from_jd[jd_phrase] = max_sim * 0.8  # 80% weight
+        else:
+            missing_from_jd[jd_phrase] = max_sim * 0.8
+    
+    # Stage 2: CV vs Master Skills (20% weight)
+    matched_from_master = {}
+    for skill_name, skill_emb in STANDARD_SKILLS_EMBEDDINGS.items():
+        # Check if skill exists in CV
+        cv_similarities = util.cos_sim(skill_emb, cv_embeddings)[0]
+        cv_max_sim = cv_similarities.max().item()
+        
+        # Check if skill exists in JD
+        jd_similarities = util.cos_sim(skill_emb, jd_embeddings)[0]
+        jd_max_sim = jd_similarities.max().item()
+        
+        if cv_max_sim > 0.82 and jd_max_sim > 0.82:
+            # Skill found in both CV and JD
+            matched_from_master[skill_name] = min(cv_max_sim, jd_max_sim) * 0.2  # 20% weight
+        elif jd_max_sim > 0.82 and cv_max_sim <= 0.82:
+            # Skill required in JD but missing in CV
+            missing_from_jd[skill_name] = jd_max_sim * 0.2
+    
+    # Combine results with weighted scores
+    all_matched = {**matched_from_jd, **matched_from_master}
+    
+    # Sort by score and return top matches
+    matched_skills = sorted(all_matched.keys(), key=lambda k: all_matched[k], reverse=True)[:15]
+    missing_skills = sorted(missing_from_jd.keys(), key=lambda k: missing_from_jd[k], reverse=True)[:15]
+    
+    return matched_skills, missing_skills
 
-    text_lower = text.lower()
-    for pat in skills_patterns:
-        for match in pat.finditer(text_lower):
-            skills.add(match.group(0))
-
-    for pat in experience_patterns:
-        for match in pat.finditer(text_lower):
-            experience.add(match.group(0))
-
-    for pat in education_patterns:
-        for match in pat.finditer(text_lower):
-            education.add(match.group(0))
-
-    return {
-        "skills": list(skills),
-        "experience": list(experience),
-        "education": list(education)
-    }
+def cluster_documents(texts: List[str], filenames: List[str], num_clusters: int = 3) -> List[Dict[str, Any]]:
+    if not texts:
+        return []
+    if len(texts) < num_clusters:
+        num_clusters = len(texts)
+        
+    embeddings = model.encode(texts)
+    kmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init=10)
+    kmeans.fit(embeddings)
+    
+    labels = kmeans.labels_
+    
+    clusters = {i: [] for i in range(num_clusters)}
+    for idx, label in enumerate(labels):
+        clusters[label].append({
+            "filename": filenames[idx],
+            "text": texts[idx]
+        })
+        
+    result = []
+    for cluster_id, items in clusters.items():
+        combined_text = " ".join([item["text"] for item in items])
+        cluster_phrases = extract_phrases(combined_text)
+        
+        # Extract top semantic keywords from cluster
+        if cluster_phrases:
+            phrase_embs = model.encode(cluster_phrases[:50], convert_to_tensor=True)
+            cluster_skills = []
+            
+            for skill_name, skill_emb in STANDARD_SKILLS_EMBEDDINGS.items():
+                similarities = util.cos_sim(skill_emb, phrase_embs)[0]
+                max_sim = similarities.max().item()
+                if max_sim > 0.82:
+                    cluster_skills.append(skill_name)
+            
+            suggested_label = " / ".join(cluster_skills[:3]) if cluster_skills else f"Cluster {cluster_id + 1}"
+        else:
+            suggested_label = f"Cluster {cluster_id + 1}"
+        
+        result.append({
+            "cluster_id": cluster_id,
+            "suggested_label": suggested_label,
+            "candidates": [item["filename"] for item in items]
+        })
+        
+    return result
