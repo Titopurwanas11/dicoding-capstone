@@ -1,12 +1,24 @@
 # CV Summarizer & Job Matching System
 
-A web-based application for CV Summarization and Job Matching using Natural Language Processing (NLP).
+A web-based application for CV Summarization, Job Matching, and Talent Analytics using Natural Language Processing (NLP).
+
+## Features
+
+- **Job Seeker Portal**:
+  - **Scrape Jobs**: Pull real-time jobs from LinkedIn using keywords and locations.
+  - **CV-JD Analysis**: Detailed analysis using hybrid semantic matching (80% CV-JD direct match + 20% Master Skills) to find similarity scores, matched skills, and missing skills.
+  - **Semantic Search**: Upload CV and search for the most relevant jobs stored in MongoDB using vector embeddings.
+- **HR Panel**:
+  - **Bulk CV Ranking**: Upload multiple CVs to rank candidates against a target job description.
+  - **Talent Clustering**: Group candidates into dynamically labeled clusters using K-Means clustering of CV embeddings.
 
 ## Architecture
 
 - **Backend**: FastAPI (Python 3.10+)
-- **Frontend**: Vue.js (Vue 3 with Vite)
-- **NLP Engine**: `sentence-transformers` (all-MiniLM-L6-v2)
+- **Frontend**: Vue.js (Vue 3 with Vite & Vue Router)
+- **Database**: MongoDB (Storage for scraped jobs and embeddings)
+- **Database GUI**: Mongo Express
+- **NLP Engine**: `sentence-transformers` (configurable, default: `paraphrase-multilingual-MiniLM-L12-v2`)
 - **Containerization**: Docker & Docker Compose
 
 ## Project Structure
@@ -15,65 +27,90 @@ A web-based application for CV Summarization and Job Matching using Natural Lang
 .
 ├── backend/
 │   ├── app/
-│   │   ├── core/
-│   │   │   └── keywords.json      # Dynamic keyword patterns
 │   │   ├── api/
-│   │   │   └── endpoints.py       # POST /api/match
+│   │   │   ├── endpoints.py       # Core APIs (scrape, match, search)
+│   │   │   ├── hr_endpoints.py    # HR APIs (rank, cluster)
+│   │   │   └── jobs_endpoints.py  # Jobs operations
+│   │   ├── core/
+│   │   │   └── mongodb.py         # MongoDB connection helper
 │   │   ├── services/
-│   │   │   ├── parser.py          # PDF/DOCX text extraction
-│   │   │   └── nlp.py             # Similarity & keyword extraction
-│   │   └── main.py                # FastAPI entrypoint
+│   │   │   ├── linkedin_scraper.py# BeautifulSoup job scraper
+│   │   │   ├── nlp.py             # NLP match, search, clustering logic
+│   │   │   └── parser.py          # PDF/DOCX parsing & cleaning logic
+│   │   └── main.py                # FastAPI app entrypoint
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
-│   │   └── App.vue                # Main UI component
+│   │   ├── components/            # Reusable UI components
+│   │   ├── views/                 # View pages (Analyze, Cluster, Scrape, etc.)
+│   │   ├── router/                # Vue Router configuration
+│   │   ├── App.vue                # Root App component
+│   │   └── main.js                # App entrypoint
 │   ├── Dockerfile
 │   └── package.json
-└── docker-compose.yml
+├── .env.example                   # Env template
+└── docker-compose.yml             # Orchestration file
 ```
 
-## Quick Start
+## Installation & Setup
 
-1. **Build and run containers**:
+Follow these steps to run the project on a new device:
+
+### Prerequisites
+
+Make sure you have the following installed on your machine:
+- **Docker**: [Install Docker](https://docs.docker.com/get-docker/)
+- **Docker Compose**: [Install Docker Compose](https://docs.docker.com/compose/install/)
+
+### Step 1: Clone the Repository
+
+```bash
+git clone <repository-url>
+cd caps-final
+```
+
+### Step 2: Configure Environment Variables
+
+1. Copy the example environment file:
    ```bash
-   docker compose up --build
+   cp .env.example .env
+   ```
+2. Open `.env` and configure your credentials and preference:
+   ```env
+   MONGO_ROOT_USER=admin
+   MONGO_ROOT_PASSWORD=password
+   MONGO_EXPRESS_USER=admin
+   MONGO_EXPRESS_PASSWORD=password
+   MODEL_MAIN=paraphrase-multilingual-MiniLM-L12-v2
    ```
 
-2. **Access services**:
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:8000
+### Step 3: Start the Application
 
-3. **Usage**:
-   - Upload a CV (PDF/DOCX)
-   - Paste a job description
-   - Click "Analyze Match"
-   - View similarity score and extracted keywords
+Build and run all services in the background using Docker Compose:
 
-## API Endpoint
+```bash
+docker compose up --build
+```
 
-**POST /api/match**
+*(Note: The first run might take a few minutes as it downloads the model cache and builds images.)*
 
-- **Form data**:
-  - `cv`: File (PDF/DOCX)
-  - `job_description`: Text string
-- **Response**:
-  ```json
-  {
-    "similarity_score": 85.5,
-    "insights": {
-      "skills": ["python", "docker"],
-      "experience": ["3 years experience"],
-      "education": ["bachelor degree"]
-    }
-  }
-  ```
+## Service Access URLs
 
-## Configuration
+Once Docker Compose is running, access the services using the following URLs:
 
-Edit `backend/app/core/keywords.json` to customize keyword patterns for skills, experience, and education extraction.
+- **Frontend Interface**: http://localhost:5173
+- **Backend API Docs (Swagger)**: http://localhost:8000/docs
+- **Mongo Express (Database Web UI)**: http://localhost:8081
 
-## Development
+## API Documentation
 
-- Backend changes: Auto-reload enabled in Docker
-- Frontend changes: Hot-reload enabled via Vite
+### Core Endpoints
+
+- **POST `/api/scrape-recommend`**: Trigger scraping LinkedIn jobs and saving them in MongoDB.
+- **POST `/api/match-detailed`**: Direct semantic match of CV and Job Description.
+- **POST `/api/jobs/semantic-search`**: Compare uploaded CV against all scraped jobs using vector similarity.
+- **POST `/api/hr/rank`**: Rank bulk CV uploads against a job description.
+- **POST `/api/hr/cluster`**: Perform cluster analysis on candidate CVs.
+- **GET `/api/jobs`**: Fetch jobs stored in MongoDB.
+- **DELETE `/api/jobs/clear`**: Clear all jobs from MongoDB.
