@@ -132,36 +132,49 @@ class SyntheticDataGenerator:
         return pd.DataFrame(data)
     
     def generate_pair_data(self, num_examples=2000):
-        """Generate labeled pair data (cv_text, jd_text, label) for Cross-Encoder"""
+        """Generate labeled pair data (cv_text, jd_text, label) for Cross-Encoder with semantic 4-tier labels"""
         data = []
         domains = list(self.domains_config.keys())
         
         positive_templates = self.templates.get("positive_templates", {})
         anchor_templates = self.templates.get("anchor_templates", {})
+        negative_templates = self.templates.get("negative_templates", {})
         
         for _ in range(num_examples):
             domain = random.choice(domains)
             
             positive_tmpls = positive_templates.get(domain, positive_templates.get("general", []))
             anchor_tmpls = anchor_templates.get(domain, anchor_templates.get("general", []))
+            negative_tmpls = negative_templates.get(domain, negative_templates.get("general", []))
             
             if not positive_tmpls or not anchor_tmpls:
                 continue
             
-            # 70% positive matches, 30% negative non-matches
-            is_match = random.random() < 0.7
+            # 30% strong match, 25% good match, 25% partial match, 20% no match
+            rand = random.random()
             
-            if is_match:
+            if rand < 0.30:
+                # Strong match: same domain CV-JD with same skill keywords
                 cv = self._fill_template(random.choice(positive_tmpls), domain, is_positive=True)
                 jd = self._fill_template(random.choice(anchor_tmpls), domain)
-                label = 1.0
-            else:
+                label = random.uniform(0.88, 1.0)
+            elif rand < 0.55:
+                # Good match: same domain CV-JD but different skill variations
                 cv = self._fill_template(random.choice(positive_tmpls), domain, is_positive=True)
-                # Pick different domain for job description
+                jd = self._fill_template(random.choice(anchor_tmpls), domain)
+                label = random.uniform(0.60, 0.80)
+            elif rand < 0.80:
+                # Partial match: CV from negative template (wrong context), JD from correct domain
+                cv = self._fill_template(random.choice(negative_tmpls), domain, is_positive=False)
+                jd = self._fill_template(random.choice(anchor_tmpls), domain)
+                label = random.uniform(0.25, 0.50)
+            else:
+                # No match: completely different domains
+                cv = self._fill_template(random.choice(positive_tmpls), domain, is_positive=True)
                 neg_domain = random.choice([d for d in domains if d != domain])
                 neg_anchor_tmpls = anchor_templates.get(neg_domain, anchor_templates.get("general", []))
                 jd = self._fill_template(random.choice(neg_anchor_tmpls), neg_domain)
-                label = 0.0
+                label = random.uniform(0.0, 0.20)
                 
             data.append({
                 "cv_text": cv,

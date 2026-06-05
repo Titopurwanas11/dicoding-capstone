@@ -1,5 +1,6 @@
 import re
 import os
+import math
 from sentence_transformers import SentenceTransformer, util, CrossEncoder
 from sklearn.cluster import KMeans
 from typing import List, Dict, Any, Tuple
@@ -16,7 +17,7 @@ cross_encoder = None
 if MODEL_CROSS_ENCODER:
     try:
         print(f"[NLP] Loading Cross-Encoder from: {MODEL_CROSS_ENCODER}")
-        cross_encoder = CrossEncoder(MODEL_CROSS_ENCODER)
+        cross_encoder = CrossEncoder(MODEL_CROSS_ENCODER, num_labels=1)
     except Exception as e:
         print(f"[NLP] Warning: Could not load Cross-Encoder: {e}")
 
@@ -32,6 +33,21 @@ def get_skill_embeddings_for_skills(skills: List[str]):
 
 
 def get_similarity_score(text1: str, text2: str) -> float:
+    USE_CROSS_ENCODER = True
+
+    if USE_CROSS_ENCODER and cross_encoder is not None:
+        try:
+            scores = cross_encoder.predict([[text1, text2]])
+            val = scores
+            while isinstance(val, (list, np.ndarray)):
+                val = val[0]
+            val = float(val)
+            prob = 1.0 / (1.0 + math.exp(-val))
+            return round(prob * 100, 2)
+        except Exception as e:
+            print(f"[NLP] CrossEncoder prediction failed: {e}")
+
+    # Fallback to Bi-Encoder (Cosine Similarity)
     emb1 = model.encode(text1, convert_to_tensor=True)
     emb2 = model.encode(text2, convert_to_tensor=True)
     similarity = util.cos_sim(emb1, emb2).item()
@@ -40,27 +56,47 @@ def get_similarity_score(text1: str, text2: str) -> float:
 def extract_phrases(text: str) -> List[str]:
     from app.services.parser import STOPWORDS
     
-    phrases = re.split(r'[\n,;\t•|]', text)
+    phrases = re.split(r'[\n,;\t•|.]', text)
     valid_phrases = []
     
     for p in phrases:
         p = p.strip()
-        if not p or len(p) <= 3:
+        if not p or len(p) <= 2:
             continue
             
-        words = p.lower().split()
-        if all(w in STOPWORDS for w in words):
+        words = p.split()
+        # Batasi panjang frasa (maksimal 4 kata) untuk menghindari ekstraksi satu kalimat penuh
+        if len(words) > 4:
             continue
             
-        valid_phrases.append(p)
+        # Periksa apakah semua kata di dalam frasa adalah stopwords
+        if all(w.lower() in STOPWORDS for w in words):
+            continue
+            
+        # Bersihkan punctuation di awal/akhir frasa
+        p_clean = re.sub(r'^[^\w+#-]+|[^\w+#-]+$', '', p)
+        if len(p_clean) > 2 and not p_clean.lower() in STOPWORDS:
+            valid_phrases.append(p_clean)
     
-    words = re.findall(r'\b[a-zA-Z0-9+#.-]{3,20}\b', text)
+    # Ekstraksi kata tunggal yang sangat mungkin berupa teknologi/spesifik
+    words = re.findall(r'\b[a-zA-Z0-9+#.-]{2,20}\b', text)
     for w in words:
-        if w.lower() not in STOPWORDS:
-            if w[0].isupper() or any(c in w for c in '+#.'):
-                valid_phrases.append(w)
+        w_lower = w.lower()
+        if w_lower not in STOPWORDS:
+            # 1. Mengandung karakter teknologi khusus (+, #, ., -) seperti C++, C#, Vue.js, CI/CD
+            # 2. ATAU merupakan singkatan dengan huruf kapital penuh (SQL, AWS, GCP, IT)
+            # 3. ATAU kata yang memang tidak diawali kapital biasa (untuk menangkap kasus lowercase)
+            #    tapi di sini kita hanya terima jika ia ALL CAPS atau memiliki special char teknologi
+            is_tech_char = any(c in w for c in '+#.-')
+            is_all_caps = w.isupper() and len(w) >= 2
             
-    valid_phrases = list(set([p for p in valid_phrases if 3 < len(p) < 100]))
+            if is_tech_char or is_all_caps:
+                # Bersihkan punctuation
+                w_clean = re.sub(r'^[^\w+#-]+|[^\w+#-]+$', '', w)
+                if len(w_clean) >= 2 and w_clean.lower() not in STOPWORDS:
+                    valid_phrases.append(w_clean)
+            
+    valid_phrases = list(set([p for p in valid_phrases if 2 <= len(p) < 50]))
     return valid_phrases
 
 def rerank_with_cross_encoder(cv_text: str, candidates: List[Dict]) -> List[Dict]:
@@ -74,18 +110,62 @@ def rerank_with_cross_encoder(cv_text: str, candidates: List[Dict]) -> List[Dict
         scores = cross_encoder.predict(pairs)
         
         for i, candidate in enumerate(candidates):
-            candidate['cross_encoder_score'] = round(float(scores[i][0]) * 100, 2)
+            val = scores[i]
+            while isinstance(val, (list, np.ndarray)):
+                val = val[0]
+            val = float(val)
+            prob = 1.0 / (1.0 + math.exp(-val))
+            candidate['cross_encoder_score'] = round(prob * 100, 2)
         
         return sorted(candidates, key=lambda x: x['cross_encoder_score'], reverse=True)
     except Exception as e:
         print(f"[NLP] Cross-Encoder re-ranking failed: {e}")
         return candidates
 
+def normalize_skill_name(name: str) -> str:
+    """
+    Normalize skill name by converting to lowercase and stripping common suffixes
+    like .js, js, framework, library to allow flexible exact matching.
+    """
+    n = name.lower().strip()
+    n = re.sub(r'(?:[\s.-]?js|[\s.-]?j\.s|[\s.-]?j-s)$', '', n)
+    n = re.sub(r'(?:[\s.-]?framework|[\s.-]?library)$', '', n)
+    return n.strip()
+
+def has_skill_exact(skill: str, text: str) -> bool:
+    """
+    Check if a skill is present in text as an exact word match (case-insensitive).
+    Handles special characters like C++, C#, .NET, etc. safely.
+    Also performs soft exact matching for variations like Vue.js vs Vue, ReactJS vs React.
+    """
+    skill_norm = normalize_skill_name(skill)
+    
+    # 1. Soft matching by tokenizing and normalizing each token in the text
+    tokens = re.findall(r'\b[a-zA-Z0-9+#.-]+\b', text)
+    for token in tokens:
+        if normalize_skill_name(token) == skill_norm:
+            return True
+            
+    # 2. Fallback to standard exact regex matching (for multi-word skills like "Machine Learning")
+    skill_lower = skill.lower().strip()
+    text_lower = text.lower()
+    escaped = re.escape(skill_lower)
+    
+    pattern = ""
+    if re.match(r'^\w', skill_lower):
+        pattern += r'\b'
+    pattern += escaped
+    if re.search(r'\w$', skill_lower):
+        pattern += r'\b'
+        
+    return bool(re.search(pattern, text_lower))
+
+
 def match_cv_jd_hybrid(cv_text: str, jd_text: str, domain: str) -> Tuple[List[str], List[str]]:
     """
-    Hybrid semantic matching with 2 stages:
-    - Stage 1 (80%): Direct CV phrases vs JD phrases comparison
-    - Stage 2 (20%): CV phrases vs Master Skills comparison
+    Hybrid semantic matching:
+    - Target list of skills: Union of phrases extracted from JD and domain skills present in JD.
+    - Check match against CV using soft exact matching first, with semantic matching as fallback.
     """
     from app.core.domain_loader import load_domain_config
     
@@ -94,47 +174,85 @@ def match_cv_jd_hybrid(cv_text: str, jd_text: str, domain: str) -> Tuple[List[st
     threshold_direct = config.get("threshold_direct_match", 0.75)
     threshold_master = config.get("threshold_master_match", 0.82)
     
-    cv_phrases = extract_phrases(cv_text)
+    # Extract phrases from JD and CV
     jd_phrases = extract_phrases(jd_text)
+    cv_phrases = extract_phrases(cv_text)
     
-    if not cv_phrases or not jd_phrases:
+    # Target skills/phrases to match (all required by JD)
+    # Kita hanya masukkan jd_phrases jika dia lolos filter stopwords ATAU mirip/merupakan bagian dari domain_skills
+    target_skills = set()
+    
+    # Pre-encode domain skills if available to match with extracted jd_phrases
+    domain_embeddings = None
+    if domain_skills and jd_phrases:
+        try:
+            domain_embeddings = model.encode(domain_skills, convert_to_tensor=True)
+        except Exception:
+            pass
+            
+    for phrase in jd_phrases:
+        # Jika frasa ada langsung di domain skills, masukkan
+        if phrase in domain_skills:
+            target_skills.add(phrase)
+            continue
+            
+        # Jika frasa mirip dengan salah satu domain skills, kita anggap itu valid skill
+        if domain_embeddings is not None:
+            try:
+                phrase_emb = model.encode(phrase, convert_to_tensor=True)
+                similarities = util.cos_sim(phrase_emb, domain_embeddings)[0]
+                if similarities.max().item() >= 0.75:
+                    target_skills.add(phrase)
+                    continue
+            except Exception:
+                pass
+                
+        # Jika panjang kata <= 2 dan lolos stopword, boleh masuk sebagai fallback (contoh: 'SQL', 'Git')
+        if len(phrase.split()) <= 2:
+            target_skills.add(phrase)
+            
+    # Selalu masukkan skill dari domain config yang tertulis jelas (exact match) di dalam JD
+    for skill in domain_skills:
+        if has_skill_exact(skill, jd_text):
+            target_skills.add(skill)
+            
+    if not target_skills:
         return [], []
-    
-    cv_embeddings = model.encode(cv_phrases, convert_to_tensor=True)
-    jd_embeddings = model.encode(jd_phrases, convert_to_tensor=True)
-    
-    matched_from_jd = {}
-    missing_from_jd = {}
-    
-    for jd_idx, jd_phrase in enumerate(jd_phrases):
-        jd_emb = jd_embeddings[jd_idx]
-        similarities = util.cos_sim(jd_emb, cv_embeddings)[0]
-        max_sim = similarities.max().item()
         
-        if max_sim > threshold_direct:
-            matched_from_jd[jd_phrase] = max_sim * 0.8
+    matched_with_scores = {}
+    missing_skills_with_scores = {}
+    
+    # Pre-encode CV phrases if available for semantic fallback
+    cv_phrase_embeddings = None
+    if cv_phrases:
+        cv_phrase_embeddings = model.encode(cv_phrases, convert_to_tensor=True)
+        
+    for skill in target_skills:
+        # 1. Soft Exact Match check in CV
+        if has_skill_exact(skill, cv_text):
+            matched_with_scores[skill] = 100.0
+            continue
+            
+        # 2. Semantic Fallback check
+        threshold = threshold_master if skill in domain_skills else threshold_direct
+        
+        if cv_phrase_embeddings is not None and cv_phrases:
+            skill_emb = model.encode(skill, convert_to_tensor=True)
+            similarities = util.cos_sim(skill_emb, cv_phrase_embeddings)[0]
+            max_sim = similarities.max().item()
+            
+            if max_sim >= threshold:
+                matched_with_scores[skill] = round(max_sim * 100, 2)
+            else:
+                missing_skills_with_scores[skill] = round(max_sim * 100, 2)
         else:
-            missing_from_jd[jd_phrase] = max_sim * 0.8
+            missing_skills_with_scores[skill] = 0.0
+            
+    # Sort matched_skills by score descending, exact matches (100.0) first
+    matched_skills = sorted(matched_with_scores.keys(), key=lambda k: matched_with_scores[k], reverse=True)[:15]
     
-    matched_from_master = {}
-    domain_skill_embeddings = get_skill_embeddings_for_skills(domain_skills)
-    
-    for skill_name, skill_emb in domain_skill_embeddings.items():
-        cv_similarities = util.cos_sim(skill_emb, cv_embeddings)[0]
-        cv_max_sim = cv_similarities.max().item()
-        
-        jd_similarities = util.cos_sim(skill_emb, jd_embeddings)[0]
-        jd_max_sim = jd_similarities.max().item()
-        
-        if cv_max_sim > threshold_master and jd_max_sim > threshold_master:
-            matched_from_master[skill_name] = min(cv_max_sim, jd_max_sim) * 0.2
-        elif jd_max_sim > threshold_master and cv_max_sim <= threshold_master:
-            missing_from_jd[skill_name] = jd_max_sim * 0.2
-    
-    all_matched = {**matched_from_jd, **matched_from_master}
-    
-    matched_skills = sorted(all_matched.keys(), key=lambda k: all_matched[k], reverse=True)[:15]
-    missing_skills = sorted(missing_from_jd.keys(), key=lambda k: missing_from_jd[k], reverse=True)[:15]
+    # Sort missing_skills by score descending (closest missing skills shown first)
+    missing_skills = sorted(missing_skills_with_scores.keys(), key=lambda k: missing_skills_with_scores[k], reverse=True)[:15]
     
     return matched_skills, missing_skills
 
