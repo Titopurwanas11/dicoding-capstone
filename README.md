@@ -6,7 +6,7 @@ A web-based application for CV Summarization, Job Matching, and Talent Analytics
 
 - **Job Seeker Portal**:
   - **Scrape Jobs**: Pull real-time jobs from LinkedIn using keywords and locations.
-  - **CV-JD Analysis**: Detailed analysis using hybrid semantic matching (80% CV-JD direct match + 20% Master Skills) to find similarity scores, matched skills, and missing skills.
+  - **CV-JD Analysis**: Bi-Encoder semantic matching to find similarity scores, matched skills, and missing skills.
   - **Semantic Search**: Upload CV and search for the most relevant jobs stored in MongoDB using vector embeddings.
 - **HR Panel**:
   - **Bulk CV Ranking**: Upload multiple CVs to rank candidates against a target job description.
@@ -66,7 +66,7 @@ A web-based application for CV Summarization, Job Matching, and Talent Analytics
 │   ├── scripts/
 │   │   ├── generate_dataset.py    # Synthetic data generator
 │   │   ├── train_bi_encoder.py    # Bi-Encoder training script
-│   │   └── train_cross_encoder.py # Cross-Encoder training script
+│   │   └── train_cross_encoder.py # Cross-Encoder training script (optional)
 │   ├── templates/
 │   │   ├── anchor_templates.json  # Job description templates
 │   │   ├── positive_templates.json# Matching CV templates
@@ -135,7 +135,7 @@ Once Docker Compose is running, access the services using the following URLs:
 ### Core Endpoints
 
 - **POST `/api/scrape-recommend`**: Trigger scraping LinkedIn jobs and saving them in MongoDB.
-- **POST `/api/match-detailed`**: Direct semantic match of CV and Job Description.
+- **POST `/api/match-detailed`**: Bi-Encoder semantic match of CV and Job Description.
 - **POST `/api/jobs/semantic-search`**: Compare uploaded CV against all scraped jobs using vector similarity.
 - **POST `/api/hr/rank`**: Rank bulk CV uploads against a job description.
 - **POST `/api/hr/cluster`**: Perform cluster analysis on candidate CVs.
@@ -154,7 +154,6 @@ The project uses synthetic training data generated from domain-specific template
 ```
 data/training/
 ├── bi_encoder_train.csv      # Triplet data (anchor, positive, negative)
-├── cross_encoder_train.csv   # Pairs data (cv_text, jd_text, label)
 └── README.md                 # Dataset format documentation
 ```
 
