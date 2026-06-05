@@ -1,5 +1,38 @@
 # Dokumentasi Bug - Fine-Tuning & NLP System
 
+## Status: UNRESOLVED (Current Bugs / Improvements)
+
+Berikut adalah bug atau optimalisasi yang masih perlu diperbaiki.
+
+---
+
+## 8. Deskripsi Pekerjaan (JD) Tidak Dibersihkan saat Scraping & Ranking HR (UNRESOLVED)
+
+* **Lokasi**: 
+  * `backend/app/services/linkedin_scraper.py` (line 106)
+  * `backend/app/api/hr_endpoints.py` (line 21)
+* **Gejala / Masalah**: 
+  * Pada saat scraping LinkedIn (`linkedin_scraper.py`), teks deskripsi pekerjaan disimpan ke MongoDB dan langsung di-encode (`description_embedding`) **tanpa dibersihkan**. JD mentah sering kali mengandung tag HTML, URL lowongan, email kontak, dan noise lainnya yang mengotori hasil embedding.
+  * Pada pencarian semantik (`/jobs/semantic-search`), teks CV yang bersih dibandingkan dengan embedding JD yang kotor, sehingga menurunkan akurasi pencarian.
+  * Pada endpoint HR (`/hr/rank`), `job_description` dikirim langsung ke `get_similarity_score` tanpa dibersihkan terlebih dahulu.
+* **Solusi**: 
+  1. Import `clean_text` dari `parser.py` dan bersihkan deskripsi pekerjaan sebelum melakukan embedding di scraper.
+  2. Bersihkan juga `job_description` di `hr_endpoints.py` sebelum masuk ke fungsi scoring.
+
+---
+
+## 9. Bug Eksekusi Script dari Jupyter Notebook (UNRESOLVED)
+
+* **Lokasi**: `training/notebooks/finetuning-model.ipynb`
+* **Gejala / Masalah**: 
+  * Menggunakan string `'python'` langsung pada `subprocess.run()`. Hal ini memicu *interpreter default sistem*, bukan *virtual environment* (conda/venv) aktif milik Jupyter Kernel. Akibatnya muncul error `ModuleNotFoundError`.
+  * Menggunakan `subprocess.run(capture_output=True)` yang menahan output stdout ke memori. Log training (loss, progress bar) tidak tercetak secara real-time sehingga Jupyter terlihat hang/freeze berjam-jam selama proses training.
+* **Solusi**: 
+  1. Ganti `'python'` dengan `sys.executable` agar menggunakan interpreter yang sama dengan kernel.
+  2. Ganti `subprocess.run()` dengan `subprocess.Popen()` untuk men-stream log training (loss, progress bar) secara real-time ke output cell notebook.
+
+---
+
 ## Status: RESOLVED
 
 Semua bug di bawah ini sudah diperbaiki di branch `feat/bi-encoder-only`.
