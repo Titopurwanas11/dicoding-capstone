@@ -16,8 +16,8 @@
 - `backend/app/api/jobs_endpoints.py`: Job listing routes (list, clear)
 - `frontend/src/views/`: Vue components for each feature
 - `frontend/src/router/index.js`: Route configuration
-- `training/scripts/generate_dataset.py`: Synthetic dataset generation for Bi-Encoder (triplets) and Cross-Encoder (pairs)
-- `training/scripts/train_cross_encoder.py`: Cross-Encoder fine-tuning script
+- `training/scripts/generate_dataset.py`: Synthetic dataset generation for Bi-Encoder (triplets)
+- `training/scripts/train_bi_encoder.py`: Bi-Encoder training script
 
 ## API Endpoints
 - `POST /api/scrape-recommend`: Scrape LinkedIn + recommend top 5 jobs
@@ -65,7 +65,7 @@
 - `model.encode(text1)` + `model.encode(text2)` → `cos_sim()` → 0-100%
 
 ## Notes
-- Cross-Encoder is disabled to save memory; Bi-Encoder is used for all scoring
+- Cross-Encoder is removed from the project; Bi-Encoder is used for all scoring
 - All text inputs (CV and JD) are cleaned before processing via `clean_text()`
 - Domain skill configs are stored in `backend/app/core/skills/*.json`
 - Job descriptions are embedded and stored in MongoDB for vector search

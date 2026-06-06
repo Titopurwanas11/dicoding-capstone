@@ -37,7 +37,6 @@ services:
       - MONGO_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/
       - MODEL_MAIN=${MODEL_MAIN}
       - MODEL_BI_ENCODER=${MODEL_BI_ENCODER}
-      - MODEL_CROSS_ENCODER=${MODEL_CROSS_ENCODER}
       - HF_HOME=/root/.cache/huggingface
     depends_on:
       - mongodb

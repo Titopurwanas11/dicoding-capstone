@@ -20,13 +20,6 @@
       <label>Job Description:</label>
       <textarea v-model="jobDescription" placeholder="Paste the job requirements here..." class="input-field textarea" rows="6"></textarea>
     </div>
-    
-    <div class="form-group inline-checkbox">
-      <label class="checkbox-label">
-        <input type="checkbox" v-model="useCrossEncoder" class="checkbox-input" />
-        Use Precise Re-Ranking (Cross-Encoder) - Slower but more accurate
-      </label>
-    </div>
 
     <button @click="rankCVs" :disabled="loading || !selectedFiles.length || !jobDescription" class="btn-primary">
       {{ loading ? 'Ranking Candidates...' : 'Rank Candidates' }}
@@ -40,27 +33,19 @@
             <tr>
               <th>Rank</th>
               <th>Candidate Name</th>
-              <th v-if="useCrossEncoder">Bi-Encoder Score</th>
-              <th v-if="useCrossEncoder">Cross-Encoder Score</th>
-              <th v-else>Match Score</th>
+              <th>Match Score</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="r in rankings" :key="r.name" :class="getScoreClass(useCrossEncoder ? r.cross_encoder_score : r.score)">
+            <tr v-for="r in rankings" :key="r.name" :class="getScoreClass(r.score)">
               <td class="rank-col">
-                <span class="rank-badge" :class="getScoreClass(useCrossEncoder ? r.cross_encoder_score : r.score)">#{{ r.rank }}</span>
+                <span class="rank-badge" :class="getScoreClass(r.score)">#{{ r.rank }}</span>
               </td>
               <td class="name-col">{{ r.name }}</td>
-              <td v-if="useCrossEncoder" class="score-col">
+              <td class="score-col">
                 <div class="score-bar-container">
                   <div class="score-bar" :class="getScoreClass(r.score)" :style="{ width: r.score + '%' }"></div>
                   <span class="score-text" :class="getScoreClass(r.score)">{{ r.score }}%</span>
-                </div>
-              </td>
-              <td class="score-col">
-                <div class="score-bar-container">
-                  <div class="score-bar" :class="getScoreClass(useCrossEncoder ? r.cross_encoder_score : r.score)" :style="{ width: (useCrossEncoder ? r.cross_encoder_score : r.score) + '%' }"></div>
-                  <span class="score-text" :class="getScoreClass(useCrossEncoder ? r.cross_encoder_score : r.score)">{{ useCrossEncoder ? r.cross_encoder_score : r.score }}%</span>
                 </div>
               </td>
             </tr>
@@ -74,10 +59,10 @@
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
+import { API_BASE_URL } from '../config/api'
 
 const selectedFiles = ref([])
 const jobDescription = ref('')
-const useCrossEncoder = ref(false)
 const loading = ref(false)
 const rankings = ref([])
 
@@ -112,7 +97,6 @@ const rankCVs = async () => {
     fd.append('cvs', f)
   }
   fd.append('job_description', jobDescription.value)
-  fd.append('use_cross_encoder', useCrossEncoder.value)
   try {
     const res = await axios.post(`${API_BASE_URL}/api/hr/rank`, fd)
     rankings.value = res.data
@@ -122,53 +106,9 @@ const rankCVs = async () => {
   }
   loading.value = false
 }
-
-import { API_BASE_URL } from '../config/api'
-
-// const rankCVs = async () => {
-//   if (!selectedFiles.value.length || !jobDescription.value) {
-//     alert("Please upload at least one CV and provide Job Description")
-//     return
-//   }
-//   loading.value = true
-//   const fd = new FormData()
-//   for (let f of selectedFiles.value) {
-//     fd.append('cvs', f)
-//   }
-//   fd.append('job_description', jobDescription.value)
-//   try {
-//     const res = await axios.post(`${API_BASE_URL}/api/hr/rank`, fd)
-//     rankings.value = res.data
-//   } catch (error) {
-//     console.error(error)
-//     alert("Failed to rank candidates")
-//   }
-//   loading.value = false
-// }
 </script>
 
 <style scoped>
-.inline-checkbox {
-  margin-bottom: 1.5rem;
-}
-
-.checkbox-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  color: #0C4A6E;
-  cursor: pointer;
-}
-
-.checkbox-input {
-  width: 1.2rem;
-  height: 1.2rem;
-  border-radius: 4px;
-  border: 2px solid var(--primary);
-  cursor: pointer;
-}
-
 .file-tags-container {
   display: flex;
   flex-wrap: wrap;

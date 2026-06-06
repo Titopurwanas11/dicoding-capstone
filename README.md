@@ -65,8 +65,7 @@ A web-based application for CV Summarization, Job Matching, and Talent Analytics
 ├── training/
 │   ├── scripts/
 │   │   ├── generate_dataset.py    # Synthetic data generator
-│   │   ├── train_bi_encoder.py    # Bi-Encoder training script
-│   │   └── train_cross_encoder.py # Cross-Encoder training script (optional)
+│   │   └── train_bi_encoder.py    # Bi-Encoder training script
 │   ├── templates/
 │   │   ├── anchor_templates.json  # Job description templates
 │   │   ├── positive_templates.json# Matching CV templates

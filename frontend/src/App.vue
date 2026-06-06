@@ -32,8 +32,6 @@
     <main class="main-content">
       <router-view />
     </main>
-    
-    <ModelInfoBadge />
   </div>
 </template>
 

@@ -2,7 +2,7 @@
 
 Panduan lengkap strategi fine-tuning untuk meningkatkan akurasi pencocokan CV dan Job Description menggunakan pendekatan Bi-Encoder berbasis domain.
 
-> **Catatan Arsitektur**: Model Cross-Encoder telah dinonaktifkan di backend (`nlp.py`) untuk menghemat konsumsi memori RAM/GPU dan mempercepat waktu startup server. Semua alur scoring similarity, ranking, dan matching saat ini sepenuhnya ditenagai oleh **Bi-Encoder** (`bi-encoder-cv-matcher`).
+> **Catatan Arsitektur**: Model Cross-Encoder telah dihapus dari backend dan frontend untuk menyederhanakan alur kerja dan menghemat konsumsi memori RAM/GPU. Semua alur scoring similarity, ranking, dan matching saat ini sepenuhnya ditenagai oleh **Bi-Encoder** (`bi-encoder-cv-matcher`).
 
 ---
 
@@ -13,7 +13,7 @@ Panduan lengkap strategi fine-tuning untuk meningkatkan akurasi pencocokan CV da
 3. [CSV Dataset Specifications](#csv-dataset-specifications)
 4. [Strategi 1: Dynamic Domain-Specific Skills](#strategi-1-dynamic-domain-specific-skills)
 5. [Strategi 2: Contrastive Learning (Bi-Encoder)](#strategi-2-contrastive-learning-bi-encoder)
-6. [Strategi 3: Cross-Encoder (Re-Ranking) [OPSIONAL/DEPRECATED]](#strategi-3-cross-encoder-re-ranking)
+6. [Strategi 3: Cross-Encoder (Re-Ranking) [REMOVED/HISTORICAL]](#strategi-3-cross-encoder-re-ranking)
 7. [Strategi 4: Custom Classification Layer (Hybrid) [FUTURE WORK]](#strategi-4-custom-classification-layer-hybrid)
 8. [Strategi 5: TSDAE & SimCSE (Unsupervised Adaptation) [FUTURE WORK]](#strategi-5-tsdae--simcse-unsupervised-adaptation)
 9. [Perbandingan Strategi](#perbandingan-strategi)
@@ -224,7 +224,7 @@ Latihan domain-specific menggunakan corpus teks mentah (tanpa label) untuk melat
 |---|---|---|---|---|
 | **Dynamic Skills** | JSON manual | Medium | Model Default | Deteksi skill per departemen |
 | **Bi-Encoder** | Triplet CSV | Tinggi | `models/bi-encoder-cv-matcher` | Semantic search, similarity scoring, filtering |
-| **Cross-Encoder [DEPRECATED]** | Pairs CSV | Sangat Tinggi | `models/cross-encoder-cv-matcher` | (Opsional) Re-ranking akhir jika Cross-Encoder diaktifkan kembali |
+| **Cross-Encoder [REMOVED/HISTORICAL]** | Pairs CSV | Sangat Tinggi | `models/cross-encoder-cv-matcher` | (Historical) Re-ranking akhir jika Cross-Encoder diaktifkan kembali |
 
 ---
 
@@ -262,18 +262,8 @@ Jika ingin proses training berjalan di background tanpa membuka Jupyter:
      --batch_size 16
    ```
 
-2. **Train Cross-Encoder** (OPSIONAL - dinonaktifkan di backend untuk efisiensi memori):
-   ```bash
-   python training/scripts/train_cross_encoder.py \
-     --train_csv data/training/cross_encoder_train.csv \
-     --output_path models/cross-encoder-cv-matcher \
-     --epochs 10 \
-     --batch_size 16
-   ```
-
 ### Langkah 3: Verifikasi Output Model
 Setelah training selesai, pastikan folder Bi-Encoder terisi (wajib):
 ```bash
 ls -la models/bi-encoder-cv-matcher/
 ```
-Folder `models/cross-encoder-cv-matcher/` hanya diperlukan jika Cross-Encoder diaktifkan kembali.
