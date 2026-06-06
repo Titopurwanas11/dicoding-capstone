@@ -20,7 +20,7 @@
       <label>Job Description:</label>
       <textarea v-model="jobDescription" placeholder="Paste the job requirements here..." class="input-field textarea" rows="6"></textarea>
     </div>
-    
+
     <button @click="rankCVs" :disabled="loading || !selectedFiles.length || !jobDescription" class="btn-primary">
       {{ loading ? 'Ranking Candidates...' : 'Rank Candidates' }}
     </button>
@@ -59,6 +59,7 @@
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
+import { API_BASE_URL } from '../config/api'
 
 const selectedFiles = ref([])
 const jobDescription = ref('')
@@ -97,7 +98,7 @@ const rankCVs = async () => {
   }
   fd.append('job_description', jobDescription.value)
   try {
-    const res = await axios.post('http://localhost:8000/api/hr/rank', fd)
+    const res = await axios.post(`${API_BASE_URL}/api/hr/rank`, fd)
     rankings.value = res.data
   } catch (error) {
     console.error(error)

@@ -4,37 +4,104 @@ from pypdf import PdfReader
 from docx import Document
 
 STOPWORDS = {
-    # English Stopwords + Generic
+    # --- 1. PREPOSISI & KATA HUBUNG STANDARD (English) ---
     "that", "this", "these", "those", "the", "a", "an", "and", "or", "but",
     "for", "with", "from", "into", "through", "during", "before", "after",
-    "above", "below", "between", "various", "many", "some", "any", "each",
-    "every", "both", "few", "more", "most", "other", "another", "such",
-    "degree", "years", "work", "team", "experience", "skill", "ability",
-    "understanding", "knowledge", "working", "strong", "good", "excellent",
-    "basic", "proficient", "familiar", "proven", "demonstrated", "required",
-    "preferred", "plus", "bonus", "role", "job", "position", "candidate",
-    "looking", "seeking", "join", "help", "build", "create", "make", "using",
-    "used", "based", "related", "similar", "equivalent", "including",
+    "above", "below", "between", "of", "to", "in", "on", "at", "by", "as",
+    "job", "description", "requirement", "requirements",
     
-    # Indonesian Stopwords
+    # --- 2. PREPOSISI & KATA HUBUNG STANDARD (Indonesian) ---
     "yang", "dan", "di", "ke", "dari", "pada", "dengan", "untuk", "dalam",
     "adalah", "sebagai", "telah", "akan", "dapat", "tidak", "ini", "itu",
     "juga", "atau", "oleh", "seperti", "sehingga", "serta", "saat", "bagi",
-    "kemudian", "namun", "karena", "bisa", "harus", "banyak", "beberapa",
-    "tahun", "pengalaman", "kemampuan", "keahlian", "pemahaman", "bekerja",
-    "baik", "kuat", "dasar", "terbukti", "dibutuhkan", "diutamakan", "nilai",
-    "tambah", "peran", "pekerjaan", "posisi", "kandidat", "mencari", "bergabung",
-    "membantu", "membangun", "membuat", "menggunakan", "berbasis", "terkait",
-    "serupa", "setara", "termasuk"
+    "kemudian", "namun", "karena", "bisa", "harus", "ia", "kami", "saya",
+    "deskripsi",
+
+    # --- 3. CV ARTIFACTS & HEADERS (Kata bawaan template dokumen) ---
+    "requirements", "description", "curriculum", "vitae", "resume", "page", 
+    "summary", "profile", "contact", "about", "me", "biodata", "personal",
+    "deskripsi", "persyaratan", "profil", "ringkasan", "tentang", "saya",
+    "halaman", "detail", "details", "information", "informasi",
+
+    # --- 4. CORPORATE CLICHES & BUZZWORDS (Pemanis kalimat yang tidak bernilai) ---
+    "seeking", "looking", "forward", "passionate", "motivated", "dynamic",
+    "results-oriented", "proven", "track", "record", "excellent", "strong",
+    "good", "success", "successful", "highly", "hardworking", "talented",
+    "mencari", "termotivasi", "dinamis", "berorientasi", "hasil", "terbukti",
+    "baik", "sukses", "sangat", "berbakat", "kompeten", "professional",
+
+    # --- 5. SATUAN WAKTU & INFORMASI UMUM (Sering muncul di riwayat kerja) ---
+    "years", "months", "year", "month",
+    "tahun", "bulan", "penuh", "waktu", "magang", "kontrak", "contract",
+    "january", "february", "march", "april", "may", "june", "july", "august", 
+    "september", "october", "november", "december", "present", "current",
+    "sekarang", "saat", "ini",
+
+    # --- 6. ACTION VERBS / KATA KERJA UMUM (Bukan skill) ---
+    "have", "must", "can", "able", "will", "shall", "may", "being",
+    "ensure", "assist", "contribute", "comply", "perform", "make", "do",
+    "manage", "handle", "support", "provide", "create", "develop",
+    "berhasil", "membantu", "mengelola", "menangani", "melakukan", "membuat",
+    "menggunakan", "menjadi", "memiliki", "serta", "termasuk",
+
+    # --- 7. RECRUITMENT NOUNS (Kata bawaan lowongan kerja, bukan skill) ---
+    "skill", "skills", "knowledge", "bachelor", "degree", "science",
+    "proficiency", "proficient", "basic", "fluent", "written", "verbal",
+    "english", "indonesia", "communication", "interpersonal",
+    "keren", "lulusan", "sarjana", "pengetahuan", "komunikasi",
+
+    # --- 8. KATA KERJA & KATA BENDA GENERIK (Bukan skill spesifik) ---
+    "work", "working", "experience", "experienced", "experience",
+    "team", "company", "position", "candidate", "applicants",
+    "role", "opportunity", "responsibilities", "duties", "tasks",
+    "pengalaman", "pengalaman kerja", "posisi", "kandidat",
+
+    # --- 9. GEOGRAFIS / LOKASI (Bukan skill) ---
+    "indonesia", "medan", "bekasi", "pangandaran", "banten",
+    "jakarta", "bandung", "surabaya", "tangerang", "depok",
+    "bogor", "semarang", "yogyakarta", "makassar", "bali",
+    "manado", "palembang", "padang", "lampung", "aceh",
+    "sumatera", "kalimantan", "sulawesi", "jawa", "ntt", "ntb",
+
+    # --- 10. KATA GENERIK LAINNYA (Kata yang sering salah dianggap skill) ---
+    "what", "within", "well", "also", "such", "like", "other",
+    "more", "all", "any", "each", "every", "both", "few", "own",
+    "new", "first", "last", "long", "great", "little", "only",
+    "over", "here", "there", "where", "when", "how", "why",
+    "berikut", "berikut", "tersebut", "lainnya", "serta",
+    "solusi", "sistem", "solutions", "system", "systems",
+    "reporting", "presentation", "design",
+    "terkait", "khusus", "umum", "lain", "lebih",
+    "e.g.", "e.g", "eg", "i.e.", "i.e", "ie", "etc", "dll", "dsb", "wfo", "wfh",
+    "database", "databases", "server", "servers", "js", "web", "app", "application",
+    "applications", "framework", "library", "tool", "tools", "platform", "platforms",
+    "data", "programming", "code", "coding", "software", "hardware", "project", "projects",
 }
 
 def clean_text(text: str) -> str:
-    """Clean extracted text from noise, excess whitespaces, and common artifacts"""
-    # Remove non-alphanumeric characters except basic punctuation
-    text = re.sub(r'[^\w\s.,;:()\-+/#]', ' ', text)
-    # Remove multiple spaces/newlines
+    """Clean extracted text from noise, excess whitespaces, HTML tags, and common artifacts while preserving case"""
+    if not text:
+        return ""
+        
+    # 1. Hapus tag HTML jika ada (terutama untuk JD hasil scrape)
+    text = re.sub(r'<[^>]*>', ' ', text)
+
+    # 3. Hapus URL/Links
+    text = re.sub(r'https?://\S+|www\.\S+', ' ', text)
+    
+    # 4. Hapus Email
+    text = re.sub(r'\S+@\S+', ' ', text)
+    
+    # 5. Hapus Nomor Telepon
+    text = re.sub(r'\+?\d[\d -]{8,15}\d', ' ', text)
+
+    # 6. Hilangkan karakter tidak perlu kecuali tanda baca dasar dan simbol teknologi (+, #, -, /)
+    text = re.sub(r'[^\w\s.,;:\-+/#]', ' ', text)
+    
+    # 7. Bersihkan spasi/newline berlebih
     text = re.sub(r'\s+', ' ', text)
-    # Remove common CV headers/footers
+    
+    # 8. Hilangkan header/footer umum CV (case-insensitive)
     noise_patterns = [
         r'(?i)page\s+\d+\s+of\s+\d+',
         r'(?i)curriculum\s+vitae',
@@ -42,6 +109,7 @@ def clean_text(text: str) -> str:
     ]
     for pattern in noise_patterns:
         text = re.sub(pattern, ' ', text)
+        
     return text.strip()
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
