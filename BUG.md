@@ -2,11 +2,17 @@
 
 ## Status: UNRESOLVED (Current Bugs / Improvements)
 
-Berikut adalah bug atau optimalisasi yang masih perlu diperbaiki.
+Tidak ada bug unresolved saat ini. Semua sudah diselesaikan.
 
 ---
 
-## 8. Deskripsi Pekerjaan (JD) Tidak Dibersihkan saat Scraping & Ranking HR (UNRESOLVED)
+## Status: RESOLVED
+
+Semua bug di bawah ini sudah diperbaiki di branch `feat/bi-encoder-only` (atau main).
+
+---
+
+## 8. Deskripsi Pekerjaan (JD) Tidak Dibersihkan saat Scraping & Ranking HR (RESOLVED)
 
 * **Lokasi**: 
   * `backend/app/services/linkedin_scraper.py` (line 106)
@@ -21,7 +27,7 @@ Berikut adalah bug atau optimalisasi yang masih perlu diperbaiki.
 
 ---
 
-## 9. Bug Eksekusi Script dari Jupyter Notebook (UNRESOLVED)
+## 9. Bug Eksekusi Script dari Jupyter Notebook (RESOLVED)
 
 * **Lokasi**: `training/notebooks/finetuning-model.ipynb`
 * **Gejala / Masalah**: 
@@ -30,12 +36,6 @@ Berikut adalah bug atau optimalisasi yang masih perlu diperbaiki.
 * **Solusi**: 
   1. Ganti `'python'` dengan `sys.executable` agar menggunakan interpreter yang sama dengan kernel.
   2. Ganti `subprocess.run()` dengan `subprocess.Popen()` untuk men-stream log training (loss, progress bar) secara real-time ke output cell notebook.
-
----
-
-## Status: RESOLVED
-
-Semua bug di bawah ini sudah diperbaiki di branch `feat/bi-encoder-only`.
 
 ---
 

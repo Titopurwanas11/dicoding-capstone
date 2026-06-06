@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form
 from typing import List
-from app.services.parser import extract_text, extract_candidate_name
+from app.services.parser import extract_text, extract_candidate_name, clean_text
 from app.services.nlp import cluster_documents, get_similarity_score
 
 router = APIRouter()
@@ -13,11 +13,14 @@ async def rank_candidates(
 ):
     candidates = []
     
+    # Clean job description to remove HTML tags, URLs, and noise
+    jd_clean = clean_text(job_description)
+    
     for cv in cvs:
         file_bytes = await cv.read()
         cv_text = extract_text(file_bytes, cv.filename)
         candidate_name = extract_candidate_name(cv_text, cv.filename)
-        similarity_score = get_similarity_score(cv_text, job_description)
+        similarity_score = get_similarity_score(cv_text, jd_clean)
         
         candidates.append({
             "name": candidate_name,

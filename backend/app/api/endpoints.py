@@ -3,7 +3,8 @@ from app.services.parser import extract_text, clean_text
 from app.services.nlp import get_similarity_score, match_cv_jd_hybrid, model
 from app.services.linkedin_scraper import scrape_linkedin_jobs
 from app.core.mongodb import get_jobs_collection
-import numpy as np
+from sentence_transformers import util
+import torch
 
 router = APIRouter()
 
@@ -62,21 +63,26 @@ async def match_cv_to_job_detailed(
 async def semantic_job_search(
     cv: UploadFile = File(...)
 ):
-    # Extract text from uploaded CV
+    # Extract text from uploaded CV (extract_text already applies clean_text)
     file_bytes = await cv.read()
     cv_text = extract_text(file_bytes, cv.filename)
     
     # Encode the CV text as the semantic query
-    query_emb = model.encode(cv_text)
+    query_emb = model.encode(cv_text, convert_to_tensor=True)
     
     jobs_collection = get_jobs_collection()
     jobs = list(jobs_collection.find({"description_embedding": {"$exists": True}}))
     
+    if not jobs:
+        return []
+    
+    # Batch compute similarities using util.cos_sim for stability
+    desc_embs = torch.tensor([job["description_embedding"] for job in jobs])
+    similarities = util.cos_sim(query_emb, desc_embs)[0]
+    
     results = []
-    for job in jobs:
-        desc_emb = np.array(job["description_embedding"])
-        similarity = np.dot(query_emb, desc_emb) / (np.linalg.norm(query_emb) * np.linalg.norm(desc_emb))
-        score = round(max(0.0, min(1.0, float(similarity))) * 100, 2)
+    for i, job in enumerate(jobs):
+        score = round(max(0.0, min(1.0, float(similarities[i]))) * 100, 2)
         
         results.append({
             "title": job["title"],
