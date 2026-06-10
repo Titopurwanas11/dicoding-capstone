@@ -28,7 +28,7 @@ async def rank_candidates(
             if total_target_skills > 0
             else 0.0
         )
-        final_score = round((semantic_score * 0.7) + (domain_skill_score * 0.3), 2)
+        final_score = round((semantic_score * 0.85) + (domain_skill_score * 0.15), 2)
         
         candidates.append({
             "name": candidate_name,

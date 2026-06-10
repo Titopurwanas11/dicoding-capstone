@@ -38,7 +38,7 @@ def extract_phrases(text: str) -> List[str]:
     valid_phrases = []
     
     # Stopwords tambahan lokal khusus untuk pemecahan frasa di tengah
-    split_conjunctions = {"and", "or", "dan", "atau", "with", "using", "menggunakan", "dengan", "for", "untuk", "in", "di", "on", "pada", "from", "dari", "to", "ke", "by", "as"}
+    split_conjunctions = {"and", "or", "dan", "atau", "with", "using", "menggunakan", "dengan", "for", "untuk", "in", "di", "on", "pada", "from", "dari", "to", "ke", "by", "as", "including", "termasuk", "such as", "seperti", "maupun", "ataupun", "vs", "versus"}
     
     for p in phrases:
         p = p.strip()
@@ -50,7 +50,7 @@ def extract_phrases(text: str) -> List[str]:
         p_lower = p.lower()
         if any(f" {w} " in f" {p_lower} " for w in split_conjunctions):
             # Lakukan pemecahan
-            parts = re.split(r'\b(?:and|or|dan|atau|with|using|menggunakan|dengan|for|untuk|in|di|on|pada|from|dari|to|ke|by|as)\b', p, flags=re.IGNORECASE)
+            parts = re.split(r'\b(?:and|or|dan|atau|with|using|menggunakan|dengan|for|untuk|in|di|on|pada|from|dari|to|ke|by|as|including|termasuk|such as|seperti|maupun|ataupun|vs|versus)\b', p, flags=re.IGNORECASE)
             for part in parts:
                 part = part.strip()
                 if part:
