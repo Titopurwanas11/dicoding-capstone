@@ -32,12 +32,12 @@ jobs:
       - name: Run Tests
         run: |
           cd backend
-          pytest -v
+          python -m pytest -v
 
       - name: Run Coverage
         run: |
           cd backend
-          pytest --cov=app --cov-report=term
+          python -m pytest --cov=app --cov-report=term
 
       - name: Build Backend Docker Image
         run: |
