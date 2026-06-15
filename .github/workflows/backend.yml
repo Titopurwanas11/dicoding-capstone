@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - tito/capstone-improvements
 
   pull_request:
 
