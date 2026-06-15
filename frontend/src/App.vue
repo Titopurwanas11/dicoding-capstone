@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <Toast ref="toast" />
+    <ToastNotification ref="toast" />
 
     <div class="bg-gradient-mesh" aria-hidden="true">
       <span class="mesh-sphere sphere-1"></span>
@@ -94,9 +94,18 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import Toast from './components/Toast.vue'
+import ToastNotification from './components/ToastNotification.vue'
+import { provide } from 'vue'
 
 const toast = ref(null)
+provide('toast', {
+  show: (msg, opts) => toast.value?.show(msg, opts),
+  hide: () => toast.value?.hide(),
+  success: (msg) => toast.value?.show(msg, { type: 'success' }),
+  error: (msg) => toast.value?.show(msg, { type: 'error' }),
+  warning: (msg) => toast.value?.show(msg, { type: 'warning' }),
+  info: (msg) => toast.value?.show(msg, { type: 'info' })
+})
 const route = useRoute()
 const isMobileMenuOpen = ref(false)
 const openDropdown = ref(null)

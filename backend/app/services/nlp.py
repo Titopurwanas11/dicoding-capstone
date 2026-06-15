@@ -178,6 +178,121 @@ def has_skill_exact(skill: str, text: str) -> bool:
     return bool(re.search(pattern, text_lower))
 
 
+def clean_skill_phrase(skill: str) -> str:
+    # Remove bullet symbols and formatting characters from start and end
+    s = re.sub(r'^[-\*•\s]+', '', skill)
+    s = re.sub(r'[-\*•\s]+$', '', s)
+    return s.strip()
+
+def is_valid_skill(phrase: str, domain_skills: set[str]) -> bool:
+    # 6. Bersihkan bullet prefix sebelum validasi
+    clean_phrase = re.sub(r'^[-\*•\s]+', '', phrase)
+    clean_phrase = re.sub(r'[-\*•\s]+$', '', clean_phrase).strip()
+    
+    if len(clean_phrase) < 2:
+        return False
+        
+    phrase_lower = clean_phrase.lower()
+    
+    # 2. Skill yang ada di whitelist domain harus selalu dianggap valid.
+    domain_skills_lower = {s.lower() for s in domain_skills} if domain_skills else set()
+    if phrase_lower in domain_skills_lower:
+        return True
+        
+    # 3. Blacklist untuk generic words
+    GENERIC_WORDS = {
+        "key", "interface", "integration", "integrations", "principle", "principles",
+        "testable", "building", "designing", "documented", "maintaining", "robust"
+    }
+    
+    # 4. Blacklist role/job title
+    ROLE_WORDS = {
+        "engineer", "engineers", "developer", "developers", "architect", "architects",
+        "manager", "managers", "consultant", "consultants", "analyst", "analysts",
+        "officer", "officers"
+    }
+    
+    # 5. Blacklist action verbs
+    ACTION_WORDS = {
+        "collaborate", "collaborating", "implement", "implementing", "build", "building",
+        "maintain", "maintaining", "design", "designing", "develop", "developing",
+        "support", "supporting", "integrate", "integrating"
+    }
+    
+    # Standard stopwords
+    from app.services.parser import STOPWORDS
+    
+    words = phrase_lower.split()
+    if not words:
+        return False
+        
+    # Check if the whole phrase matches any blacklist
+    if phrase_lower in GENERIC_WORDS or phrase_lower in ROLE_WORDS or phrase_lower in ACTION_WORDS:
+        return False
+        
+    # Check if any word is in ROLE_WORDS or GENERIC_WORDS
+    if any(w in ROLE_WORDS for w in words):
+        return False
+        
+    if any(w in GENERIC_WORDS for w in words):
+        return False
+        
+    # Check if first word is in ACTION_WORDS
+    if words[0] in ACTION_WORDS:
+        return False
+        
+    # If all words in the phrase are stopwords or generic/action/role words
+    if all(w in STOPWORDS or w in GENERIC_WORDS or w in ROLE_WORDS or w in ACTION_WORDS for w in words):
+        return False
+        
+    return True
+
+def _get_tokens(s: str) -> List[str]:
+    return re.findall(r'[a-zA-Z0-9]+', s.lower())
+
+def _is_sublist(sub: List[str], lst: List[str]) -> bool:
+    n, m = len(sub), len(lst)
+    for i in range(m - n + 1):
+        if lst[i:i+n] == sub:
+            return True
+    return False
+
+def deduplicate_skills(skills: List[str], domain_skills: List[str] = None) -> List[str]:
+    if not skills:
+        return []
+        
+    ds_lower = {s.lower() for s in domain_skills} if domain_skills else set()
+    
+    to_remove = set()
+    n = len(skills)
+    
+    for i in range(n):
+        for j in range(n):
+            if i == j or j in to_remove or i in to_remove:
+                continue
+            s1 = skills[i]
+            s2 = skills[j]
+            
+            t1 = _get_tokens(s1)
+            t2 = _get_tokens(s2)
+            
+            if not t1 or not t2:
+                continue
+                
+            if len(t1) < len(t2) and _is_sublist(t1, t2):
+                s1_lower = s1.lower()
+                s2_lower = s2.lower()
+                
+                if s1_lower in ds_lower and s2_lower not in ds_lower:
+                    to_remove.add(j)
+                elif s2_lower in ds_lower and s1_lower not in ds_lower:
+                    to_remove.add(i)
+                else:
+                    to_remove.add(i)
+                    
+    return [skills[i] for i in range(n) if i not in to_remove]
+
+
 def match_cv_jd_hybrid(cv_text: str, jd_text: str, domain: str) -> Tuple[List[str], List[str]]:
     """
     Hybrid semantic matching:
@@ -188,6 +303,7 @@ def match_cv_jd_hybrid(cv_text: str, jd_text: str, domain: str) -> Tuple[List[st
     
     config = load_domain_config(domain)
     domain_skills = config.get("skills", [])
+    domain_skill_set = set(domain_skills)
     threshold_direct = config.get("threshold_direct_match", 0.75)
     threshold_master = config.get("threshold_master_match", 0.82)
     
@@ -196,42 +312,55 @@ def match_cv_jd_hybrid(cv_text: str, jd_text: str, domain: str) -> Tuple[List[st
     cv_phrases = extract_phrases(cv_text)
     
     # Target skills/phrases to match (all required by JD)
-    # Kita hanya masukkan jd_phrases jika dia lolos filter stopwords ATAU mirip/merupakan bagian dari domain_skills
     target_skills = set()
     
-    # Pre-encode domain skills if available to match with extracted jd_phrases
-    domain_embeddings = None
-    if domain_skills and jd_phrases:
-        try:
-            domain_embeddings = model.encode(domain_skills, convert_to_tensor=True)
-        except Exception:
-            pass
-            
-    for phrase in jd_phrases:
-        # Jika frasa ada langsung di domain skills, masukkan
-        if phrase in domain_skills:
-            target_skills.add(phrase)
-            continue
-            
-        # Jika frasa mirip dengan salah satu domain skills, kita anggap itu valid skill
-        if domain_embeddings is not None:
-            try:
-                phrase_emb = model.encode(phrase, convert_to_tensor=True)
-                similarities = util.cos_sim(phrase_emb, domain_embeddings)[0]
-                if similarities.max().item() >= 0.75:
-                    target_skills.add(phrase)
-                    continue
-            except Exception:
-                pass
-                
-        # Jika panjang kata <= 2 dan lolos stopword, boleh masuk sebagai fallback (contoh: 'SQL', 'Git')
-        if len(phrase.split()) <= 2:
-            target_skills.add(phrase)
+    # 2. Check exact matches of normalization variations in JD
+    NORMALIZATION_MAP = {
+        "rest": "REST API",
+        "rest api": "REST API",
+        "restful api": "REST API",
+        "restful apis": "REST API",
+        "ci": "CI/CD",
+        "ci/cd": "CI/CD",
+        "nlp models": "NLP",
+        "nlp": "NLP",
+        "vue": "Vue.js",
+        "vue.js": "Vue.js",
+        "react": "React",
+        "react.js": "React",
+        "reactjs": "React",
+        "node": "Node.js",
+        "node.js": "Node.js",
+        "nodejs": "Node.js"
+    }
+    for var_name, norm_name in NORMALIZATION_MAP.items():
+        if has_skill_exact(var_name, jd_text):
+            target_skills.add(norm_name)
             
     # Selalu masukkan skill dari domain config yang tertulis jelas (exact match) di dalam JD
     for skill in domain_skills:
         if has_skill_exact(skill, jd_text):
             target_skills.add(skill)
+            
+    # Process extracted phrases, keeping only whitelisted or normalized ones (WHITELIST FIRST)
+    domain_skills_lower = {s.lower() for s in domain_skills}
+    for phrase in jd_phrases:
+        phrase_clean = clean_skill_phrase(phrase)
+        phrase_lower = phrase_clean.lower()
+        
+        if phrase_lower in NORMALIZATION_MAP:
+            target_skills.add(NORMALIZATION_MAP[phrase_lower])
+        elif phrase_lower in domain_skills_lower:
+            orig_skill = next((s for s in domain_skills if s.lower() == phrase_lower), phrase_clean)
+            target_skills.add(orig_skill)
+            
+    # Ensure all target_skills are cleaned, valid, and belong to domain_skills or normalized ones
+    valid_targets = set()
+    for skill in target_skills:
+        skill_clean = clean_skill_phrase(skill)
+        if skill_clean.lower() in domain_skills_lower or skill_clean in NORMALIZATION_MAP.values():
+            valid_targets.add(skill_clean)
+    target_skills = valid_targets
             
     if not target_skills:
         return [], []
@@ -266,10 +395,18 @@ def match_cv_jd_hybrid(cv_text: str, jd_text: str, domain: str) -> Tuple[List[st
             missing_skills_with_scores[skill] = 0.0
             
     # Sort matched_skills by score descending, exact matches (100.0) first
-    matched_skills = sorted(matched_with_scores.keys(), key=lambda k: matched_with_scores[k], reverse=True)[:15]
+    matched_skills = sorted(matched_with_scores.keys(), key=lambda k: matched_with_scores[k], reverse=True)
     
     # Sort missing_skills by score descending (closest missing skills shown first)
-    missing_skills = sorted(missing_skills_with_scores.keys(), key=lambda k: missing_skills_with_scores[k], reverse=True)[:15]
+    missing_skills = sorted(missing_skills_with_scores.keys(), key=lambda k: missing_skills_with_scores[k], reverse=True)
+    
+    # Apply deduplication
+    matched_skills = deduplicate_skills(matched_skills, domain_skills)
+    missing_skills = deduplicate_skills(missing_skills, domain_skills)
+    
+    # Limit output length
+    matched_skills = matched_skills[:15]
+    missing_skills = missing_skills[:15]
     
     return matched_skills, missing_skills
 

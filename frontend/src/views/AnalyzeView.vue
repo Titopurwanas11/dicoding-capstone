@@ -1,21 +1,31 @@
 <template>
   <div class="glass-panel view-container">
+    <!-- Section 2 — API Error Banner -->
+    <FloatingErrorBanner
+      v-if="apiError"
+      v-model="showErrorBanner"
+      :message="apiError.message"
+      :retry-function="matchDetailed"
+    />
+
     <h2>Detailed CV-JD Analysis</h2>
     <p class="subtitle">See exactly which skills you match and which you are missing.</p>
     
     <div class="form-group">
-      <label>Upload CV (PDF/DOCX):</label>
-      <input type="file" @change="handleFileSelect" class="input-field file-input" />
+      <label for="cv-upload">Upload CV (PDF/DOCX):</label>
+      <input id="cv-upload" type="file" @change="handleFileSelect" class="input-field file-input" :disabled="loading" />
+      <span v-if="cvError" class="inline-error">{{ cvError }}</span>
     </div>
     
     <div class="form-group">
-      <label>Job Description:</label>
-      <textarea v-model="jobDescription" placeholder="Paste the job requirements here..." class="input-field textarea" rows="6"></textarea>
+      <label for="job-desc-textarea">Job Description:</label>
+      <textarea id="job-desc-textarea" v-model="jobDescription" placeholder="Paste the job requirements here..." class="input-field textarea" rows="6" :disabled="loading"></textarea>
+      <span v-if="jobDescError" class="inline-error">{{ jobDescError }}</span>
     </div>
 
     <div class="form-group">
-      <label>Domain:</label>
-      <select v-model="domain" class="input-field">
+      <label for="domain-select">Domain:</label>
+      <select id="domain-select" v-model="domain" class="input-field" :disabled="loading">
         <option value="general">General</option>
         <option value="it">IT</option>
         <option value="hr">HR</option>
@@ -30,30 +40,72 @@
       </select>
     </div>
     
-    <button @click="matchDetailed" :disabled="loading || !selectedFile || !jobDescription" class="btn-primary">
+    <button @click="matchDetailed" :disabled="loading || showLoader" class="btn-primary">
       {{ loading ? 'Analyzing...' : 'Analyze Match' }}
     </button>
     
-    <div v-if="detailedResult" class="results detailed-results">
-      <div class="score-card" :class="getScoreClass(detailedResult.similarity_score)">
-        <h3>Match Score</h3>
-        <div class="score-value">{{ detailedResult.similarity_score }}%</div>
-      </div>
-      
-      <div class="skills-grid">
-        <div class="skills-card matched">
-          <h4>✓ Matched Skills</h4>
-          <div class="tags">
-            <span v-for="skill in detailedResult.matched_skills" :key="skill" class="skill-tag skill-tag-success">{{ skill }}</span>
-            <span v-if="!detailedResult.matched_skills.length" class="empty-state">No specific skills matched.</span>
-          </div>
+    <!-- AI Processing Dashboard Loader -->
+    <AIProcessingLoader
+      v-if="showLoader"
+      :progress="progress"
+      :message="message"
+      :elapsed-time="elapsedTime"
+      :status="status"
+      :error-message="errorMessage"
+      :steps="steps"
+      @close="handleLoaderClose"
+    />
+
+    <!-- Fatal Error State -->
+    <ErrorState
+      v-else-if="fatalError"
+      :type="fatalError.type"
+      :message="fatalError.message"
+      :retry-function="matchDetailed"
+    />
+
+    <!-- Empty State -->
+    <div v-else-if="!detailedResult" class="empty-state-panel glass-panel">
+      <div class="empty-icon">📄</div>
+      <p>No analysis performed yet. Select your CV, paste the job description, and click "Analyze Match" above to start.</p>
+    </div>
+
+    <!-- Results Container -->
+    <div v-else class="results detailed-results">
+      <!-- Render ExplainabilityCard if reasoning is available -->
+      <ExplainabilityCard
+        v-if="detailedResult.reasoning"
+        :match-score="detailedResult.match_score !== undefined ? detailedResult.match_score : detailedResult.similarity_score"
+        :recommendation="detailedResult.recommendation"
+        :matched-skills="detailedResult.matched_skills"
+        :missing-skills="detailedResult.missing_skills"
+        :skill-coverage-ratio="detailedResult.skill_coverage_ratio"
+        :reasoning="detailedResult.reasoning"
+        :domain="detailedResult.domain"
+      />
+
+      <!-- Fallback to original layout if reasoning is not available -->
+      <div v-else>
+        <div class="score-card" :class="getScoreClass(detailedResult.similarity_score)">
+          <h3>Match Score</h3>
+          <div class="score-value">{{ detailedResult.similarity_score }}%</div>
         </div>
         
-        <div class="skills-card missing">
-          <h4>× Missing Skills</h4>
-          <div class="tags">
-            <span v-for="skill in detailedResult.missing_skills" :key="skill" class="skill-tag skill-tag-danger">{{ skill }}</span>
-            <span v-if="!detailedResult.missing_skills.length" class="empty-state">No missing skills!</span>
+        <div class="skills-grid">
+          <div class="skills-card matched">
+            <h4>✓ Matched Skills</h4>
+            <div class="tags">
+              <span v-for="skill in detailedResult.matched_skills" :key="skill" class="skill-tag skill-tag-success">{{ skill }}</span>
+              <span v-if="!detailedResult.matched_skills.length" class="empty-state">No specific skills matched.</span>
+            </div>
+          </div>
+          
+          <div class="skills-card missing">
+            <h4>× Missing Skills</h4>
+            <div class="tags">
+              <span v-for="skill in detailedResult.missing_skills" :key="skill" class="skill-tag skill-tag-danger">{{ skill }}</span>
+              <span v-if="!detailedResult.missing_skills.length" class="empty-state">No missing skills!</span>
+            </div>
           </div>
         </div>
       </div>
@@ -62,17 +114,74 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, inject, watch } from 'vue'
 import axios from 'axios'
 import { API_BASE_URL } from '../config/api'
+import ExplainabilityCard from '../components/ExplainabilityCard.vue'
+import AIProcessingLoader from '../components/AIProcessingLoader.vue'
+import ErrorState from '../components/ErrorState.vue'
+import FloatingErrorBanner from '../components/FloatingErrorBanner.vue'
+import { validateFile } from '../utils/validation'
+
+const toast = inject('toast')
 
 const selectedFile = ref(null)
 const jobDescription = ref('')
 const domain = ref('general')
 const loading = ref(false)
+
+// SSE Loading State
+const showLoader = ref(false)
+const progress = ref(0)
+const elapsedTime = ref(0)
+const message = ref('')
+const status = ref('processing')
+const errorMessage = ref('')
 const detailedResult = ref(null)
 
-const handleFileSelect = (e) => { selectedFile.value = e.target.files[0] }
+// Validation Errors
+const cvError = ref('')
+const jobDescError = ref('')
+
+// Error Handlers
+const apiError = ref(null)
+const fatalError = ref(null)
+const showErrorBanner = ref(false)
+
+let timerInterval = null
+let eventSource = null
+
+// Define 7 steps for Detailed CV-JD Analysis
+const steps = [
+  'Upload CV',
+  'Parse Resume',
+  'Extract Skills',
+  'Generate Embeddings',
+  'Match CV & Job Description',
+  'Generate Explainability',
+  'Finalize Results'
+]
+
+watch(jobDescription, () => {
+  if (jobDescription.value.trim()) {
+    jobDescError.value = ''
+  }
+})
+
+const handleFileSelect = (e) => {
+  const file = e.target.files[0]
+  cvError.value = ''
+  if (!file) return
+
+  const fileValidation = validateFile(file)
+  if (!fileValidation.valid) {
+    cvError.value = fileValidation.error
+    e.target.value = ''
+    selectedFile.value = null
+    return
+  }
+  selectedFile.value = file
+}
 
 const getScoreClass = (score) => {
   if (score < 30) return 'score-danger'
@@ -80,28 +189,169 @@ const getScoreClass = (score) => {
   return 'score-success'
 }
 
+const handleLoaderClose = () => {
+  showLoader.value = false
+  loading.value = false
+  if (eventSource) eventSource.close()
+  clearInterval(timerInterval)
+}
+
 const matchDetailed = async () => {
-  if (!selectedFile.value || !jobDescription.value) {
-    alert("Please upload CV and provide Job Description")
+  cvError.value = ''
+  jobDescError.value = ''
+  
+  if (!selectedFile.value) {
+    cvError.value = "Please upload a CV file."
     return
   }
+  if (!jobDescription.value.trim()) {
+    jobDescError.value = "Please enter a Job Description."
+    return
+  }
+  
   loading.value = true
+  showLoader.value = true
+  progress.value = 0
+  elapsedTime.value = 0
+  message.value = 'Uploading files and initializing job...'
+  status.value = 'processing'
+  errorMessage.value = ''
+  detailedResult.value = null
+  apiError.value = null
+  fatalError.value = null
+  showErrorBanner.value = false
+  
   const fd = new FormData()
   fd.append('cv', selectedFile.value)
   fd.append('job_description', jobDescription.value)
   fd.append('domain', domain.value)
+  
   try {
-    const res = await axios.post(`${API_BASE_URL}/api/match-detailed`, fd)
-    detailedResult.value = res.data
+    const startRes = await axios.post(`${API_BASE_URL}/api/match-detailed/start`, fd)
+    const jobId = startRes.data.job_id
+    
+    // Start elapsed timer
+    const startTime = Date.now()
+    timerInterval = setInterval(() => {
+      elapsedTime.value = (Date.now() - startTime) / 1000
+    }, 100)
+    
+    // Subscribe to SSE progress channel
+    eventSource = new EventSource(`${API_BASE_URL}/api/progress/${jobId}`)
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        progress.value = data.progress
+        message.value = data.message
+        status.value = data.status
+        
+        if (data.status === 'completed') {
+          clearInterval(timerInterval)
+          eventSource.close()
+          
+          setTimeout(async () => {
+            try {
+              const resultRes = await axios.get(`${API_BASE_URL}/api/result/${jobId}`)
+              detailedResult.value = resultRes.data
+              
+              if (!detailedResult.value) {
+                apiError.value = { message: 'No analysis results found.' }
+                showErrorBanner.value = true
+                toast.warning('No analysis results found.')
+              } else {
+                toast.success("Analysis completed successfully.")
+              }
+              
+              showLoader.value = false
+              loading.value = false
+            } catch (err) {
+              console.error(err)
+              status.value = 'error'
+              errorMessage.value = err.message || 'Failed to fetch final match outputs.'
+              apiError.value = err
+              showErrorBanner.value = true
+              toast.error(errorMessage.value)
+            }
+          }, 1000)
+        } else if (data.status === 'error') {
+          clearInterval(timerInterval)
+          eventSource.close()
+          status.value = 'error'
+          errorMessage.value = data.message || 'Analysis processing failed.'
+          
+          apiError.value = {
+            message: data.message || 'The AI service encountered an unexpected issue.'
+          }
+          showErrorBanner.value = true
+          toast.error(apiError.value.message)
+        }
+      } catch (e) {
+        console.error("Failed to parse SSE payload", e)
+      }
+    }
+    
+    eventSource.onerror = () => {
+      clearInterval(timerInterval)
+      eventSource.close()
+      status.value = 'error'
+      
+      const isOffline = !navigator.onLine
+      let errMsg = 'Connection lost while receiving progress updates.'
+      let errType = 'network'
+      
+      if (!isOffline) {
+        errMsg = 'AI processing service is currently unavailable.'
+        errType = 'backend'
+      }
+      
+      errorMessage.value = errMsg
+      fatalError.value = {
+        type: errType,
+        message: errMsg
+      }
+      toast.error(errMsg)
+    }
+    
   } catch (error) {
     console.error(error)
-    alert("Failed to analyze")
+    loading.value = false
+    showLoader.value = false
+    
+    let errType = error.type || 'backend'
+    let errMsg = error.message || 'Failed to initialize match detailed analysis task.'
+    
+    if (error.response && error.response.status === 404) {
+      errMsg = 'Processing session expired. Please start a new analysis.'
+      errType = 'empty'
+    }
+    
+    if (errType === 'network') {
+      fatalError.value = {
+        type: errType,
+        message: errMsg
+      }
+    } else {
+      apiError.value = {
+        message: errMsg
+      }
+      showErrorBanner.value = true
+    }
+    toast.error(errMsg)
   }
-  loading.value = false
 }
 </script>
 
 <style scoped>
+.inline-error {
+  color: #EF4444;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 0.35rem;
+  display: block;
+  text-align: left;
+}
+
 .skill-tag {
   display: inline-block;
   padding: 0.5rem 1rem;
@@ -227,5 +477,29 @@ const matchDetailed = async () => {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.empty-state-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5rem 2rem;
+  margin-top: 2rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.empty-icon {
+  font-size: 2.8rem;
+  filter: drop-shadow(0 8px 16px rgba(15, 23, 42, 0.08));
+}
+
+.empty-state-panel p {
+  color: var(--text-muted);
+  font-size: 0.98rem;
+  max-width: 460px;
+  line-height: 1.6;
+  margin: 0;
 }
 </style>

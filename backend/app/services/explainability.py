@@ -58,16 +58,17 @@ def build_match_explanation(
             / total_skills
         ) * 100
 
+    # Hybrid match score: 85% Semantic similarity + 15% Skill coverage ratio
+    final_score = (similarity_score * 0.85) + (coverage_ratio * 0.15)
+    final_score = round(final_score, 2)
+
     recommendation = get_recommendation_level(
-        similarity_score
+        final_score
     )
 
     return {
 
-        "match_score": round(
-            similarity_score,
-            2
-        ),
+        "match_score": final_score,
 
         "recommendation":
             recommendation,
