@@ -66,6 +66,9 @@
               <router-link to="/jobseeker/search" active-class="is-active" @click="closeMenus">
                 Semantic Search
               </router-link>
+              <router-link to="/resume-advisor" active-class="is-active" @click="closeMenus">
+                AI Resume Advisor
+              </router-link>
             </div>
           </div>
 

@@ -109,12 +109,25 @@
           </div>
         </div>
       </div>
+
+      <!-- AI Resume Advisor CTA -->
+      <div class="advisor-cta-panel glass-panel">
+        <div class="advisor-cta-icon">🤖</div>
+        <div class="advisor-cta-text">
+          <h4>Get AI-Powered Career Recommendations</h4>
+          <p>Use your analysis results to generate a personalized learning roadmap, resume tips, and career insights.</p>
+        </div>
+        <router-link to="/resume-advisor" id="open-advisor-btn" class="btn-advisor-cta">
+          Open AI Resume Advisor →
+        </router-link>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, inject, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { API_BASE_URL } from '../config/api'
 import ExplainabilityCard from '../components/ExplainabilityCard.vue'
@@ -124,6 +137,7 @@ import FloatingErrorBanner from '../components/FloatingErrorBanner.vue'
 import { validateFile } from '../utils/validation'
 
 const toast = inject('toast')
+const router = useRouter()
 
 const selectedFile = ref(null)
 const jobDescription = ref('')
@@ -262,6 +276,19 @@ const matchDetailed = async () => {
                 toast.warning('No analysis results found.')
               } else {
                 toast.success("Analysis completed successfully.")
+                // Save result to localStorage for Resume Advisor
+                try {
+                  const advisorData = {
+                    match_score: resultRes.data.match_score ?? resultRes.data.similarity_score ?? 0,
+                    matched_skills: resultRes.data.matched_skills || [],
+                    missing_skills: resultRes.data.missing_skills || [],
+                    recommendation: resultRes.data.recommendation || 'N/A',
+                    job_description: jobDescription.value || ''
+                  }
+                  localStorage.setItem('advisor_analysis', JSON.stringify(advisorData))
+                } catch (e) {
+                  console.warn('Could not save advisor data to localStorage:', e)
+                }
               }
               
               showLoader.value = false
@@ -501,6 +528,70 @@ const matchDetailed = async () => {
   max-width: 460px;
   line-height: 1.6;
   margin: 0;
+}
+
+/* Resume Advisor CTA */
+.advisor-cta-panel {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  margin-top: 2rem;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(99, 102, 241, 0.06) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.advisor-cta-icon {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 10px rgba(139, 92, 246, 0.3));
+}
+
+.advisor-cta-text h4 {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-soft);
+}
+
+.advisor-cta-text p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.btn-advisor-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, #7C3AED, #6366F1);
+  color: white;
+  padding: 0.7rem 1.4rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  margin-left: auto;
+}
+
+.btn-advisor-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+}
+
+@media (max-width: 640px) {
+  .advisor-cta-panel {
+    flex-direction: column;
+    text-align: center;
+  }
+  .btn-advisor-cta {
+    margin-left: 0;
+  }
 }
 
 </style>

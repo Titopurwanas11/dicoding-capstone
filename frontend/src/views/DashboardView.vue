@@ -171,6 +171,15 @@
               <span class="action-link-text">Search Jobs →</span>
             </div>
           </router-link>
+
+          <router-link to="/resume-advisor" class="action-card glass-panel advisor-card">
+            <span class="action-icon">🤖</span>
+            <div class="action-content-card">
+              <h4>AI Resume Advisor</h4>
+              <p>Get personalized learning roadmap, resume tips, and career insights powered by Gemini.</p>
+              <span class="action-link-text advisor-link-text">Open Advisor →</span>
+            </div>
+          </router-link>
         </div>
       </section>
     </div>
@@ -375,6 +384,21 @@ onMounted(() => {
 
 .actions-grid.jobseeker {
   grid-template-columns: 1fr;
+}
+
+/* Advisor card highlight */
+.advisor-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.06) 0%, rgba(99, 102, 241, 0.04) 100%) !important;
+  border-color: rgba(139, 92, 246, 0.2) !important;
+}
+
+.advisor-card:hover:not(.disabled) {
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  background: rgba(139, 92, 246, 0.1) !important;
+}
+
+.advisor-link-text {
+  color: #7C3AED !important;
 }
 
 .action-card {
