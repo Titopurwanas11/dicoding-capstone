@@ -148,7 +148,7 @@ defineEmits(['move-to-talent-pool', 'move-to-interview'])
 <style scoped>
 .best-candidate-card {
   padding: 2.2rem;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.72);
   border: 2.5px solid rgba(234, 179, 8, 0.45);
   box-shadow: 0 20px 50px rgba(234, 179, 8, 0.18), var(--shadow-soft);

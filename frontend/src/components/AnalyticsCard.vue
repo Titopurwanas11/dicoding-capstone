@@ -70,7 +70,7 @@ const trendClass = computed(() => {
   flex-direction: column;
   gap: 1.15rem;
   padding: 1.5rem 1.65rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);

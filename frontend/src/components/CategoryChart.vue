@@ -50,8 +50,8 @@ const chartOptions = computed(() => {
       },
       tooltip: {
         backgroundColor: 'rgba(15, 23, 42, 0.95)',
-        titleFont: { family: 'Plus Jakarta Sans', weight: '700' },
-        bodyFont: { family: 'Plus Jakarta Sans' },
+        titleFont: { family: 'Inter', weight: '700' },
+        bodyFont: { family: 'Inter' },
         callbacks: {
           label: (context) => ` Total: ${context.raw} candidates`
         }
@@ -64,7 +64,7 @@ const chartOptions = computed(() => {
         },
         ticks: {
           color: '#1E3A5F',
-          font: { family: 'Plus Jakarta Sans', weight: '800', size: 10 }
+          font: { family: 'Inter', weight: '800', size: 10 }
         }
       },
       y: {
@@ -73,7 +73,7 @@ const chartOptions = computed(() => {
         },
         ticks: {
           color: '#64748B',
-          font: { family: 'Plus Jakarta Sans', weight: '700', size: 10 },
+          font: { family: 'Inter', weight: '700', size: 10 },
           stepSize: 1
         }
       }

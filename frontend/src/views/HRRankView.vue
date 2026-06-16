@@ -554,8 +554,8 @@ const updateChart = () => {
         },
         tooltip: {
           backgroundColor: 'rgba(15, 23, 42, 0.9)',
-          titleFont: { family: 'Plus Jakarta Sans', weight: '700' },
-          bodyFont: { family: 'Plus Jakarta Sans' },
+          titleFont: { family: 'Inter', weight: '700' },
+          bodyFont: { family: 'Inter' },
           callbacks: {
             label: (context) => `Match Score: ${context.parsed.x.toFixed(1)}%`
           }
@@ -571,7 +571,7 @@ const updateChart = () => {
           ticks: {
             color: '#64748B',
             font: {
-              family: 'Plus Jakarta Sans',
+              family: 'Inter',
               weight: '700',
               size: 11
             }
@@ -584,7 +584,7 @@ const updateChart = () => {
           ticks: {
             color: '#1E3A5F',
             font: {
-              family: 'Plus Jakarta Sans',
+              family: 'Inter',
               weight: '800',
               size: 11
             }
@@ -755,7 +755,7 @@ const handleMoveToInterview = async (candidate) => {
 
 .form-group-container {
   padding: 2.2rem;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   margin-bottom: 2rem;
   background: rgba(255, 255, 255, 0.42);
 }
@@ -866,7 +866,7 @@ const handleMoveToInterview = async (candidate) => {
   align-items: center;
   gap: 1.2rem;
   padding: 1.2rem 1.6rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
 }
 
 .stat-icon-wrapper {
@@ -966,7 +966,7 @@ const handleMoveToInterview = async (candidate) => {
 
 .chart-card {
   padding: 2rem;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   gap: 1.2rem;

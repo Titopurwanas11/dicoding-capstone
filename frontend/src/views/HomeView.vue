@@ -234,7 +234,7 @@ const hrOpen = ref(true)
   border-radius: 999px;
   border: 1px solid rgba(14, 165, 233, 0.25);
   background: rgba(14, 165, 233, 0.12);
-  color: #075985;
+  color: var(--primary-dark);
   font-size: 0.82rem;
   font-weight: 800;
   padding: 0.42rem 0.75rem;
@@ -256,10 +256,7 @@ const hrOpen = ref(true)
   line-height: 1;
   font-weight: 900;
   letter-spacing: -0.08em;
-  background: linear-gradient(135deg, #075985 0%, #0EA5E9 48%, #6366F1 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 
 .hero-section p {
@@ -292,12 +289,12 @@ const hrOpen = ref(true)
 
 .hero-btn.primary {
   color: white;
-  background: linear-gradient(135deg, #075985, #0EA5E9 52%, #6366F1);
+  background: linear-gradient(135deg, var(--primary-dark), #0EA5E9 52%, #6366F1);
   box-shadow: 0 18px 38px rgba(14, 165, 233, 0.28);
 }
 
 .hero-btn.secondary {
-  color: #075985;
+  color: var(--primary-dark);
   background: rgba(255, 255, 255, 0.68);
   border: 1px solid rgba(14, 165, 233, 0.24);
 }
@@ -380,7 +377,7 @@ const hrOpen = ref(true)
   gap: 0.85rem;
   align-items: center;
   padding: 1rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.84);
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
@@ -473,7 +470,7 @@ const hrOpen = ref(true)
 
 .metric-card strong {
   display: block;
-  color: #075985;
+  color: var(--primary-dark);
   font-size: 0.95rem;
   line-height: 1.35;
 }
@@ -488,7 +485,7 @@ const hrOpen = ref(true)
   border-radius: 999px;
   padding: 0.32rem 0.5rem;
   background: rgba(14, 165, 233, 0.12);
-  color: #075985;
+  color: var(--primary-dark);
   font-size: 0.7rem;
 }
 
@@ -517,7 +514,7 @@ const hrOpen = ref(true)
 .quick-card:hover {
   transform: translateY(-5px);
   background: rgba(255,255,255,0.86);
-  box-shadow: 0 22px 52px rgba(3,105,161,0.13);
+  box-shadow: var(--shadow-sm);
 }
 
 .quick-icon {
@@ -528,7 +525,7 @@ const hrOpen = ref(true)
 
 .quick-card h3 {
   margin: 0 0 0.45rem;
-  color: #075985;
+  color: var(--primary-dark);
   font-size: 1rem;
 }
 
@@ -580,7 +577,7 @@ const hrOpen = ref(true)
   height: 2.35rem;
   border-radius: 999px;
   background: rgba(14, 165, 233, 0.12);
-  color: #075985;
+  color: var(--primary-dark);
   font-size: 1.2rem;
   font-weight: 900;
 }
@@ -598,7 +595,7 @@ const hrOpen = ref(true)
   padding: 1.25rem;
   background: rgba(255, 255, 255, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.82);
-  border-radius: 22px;
+  border-radius: var(--radius-md);
   text-decoration: none;
   color: inherit;
   transition: all 0.25s ease;
@@ -608,7 +605,7 @@ const hrOpen = ref(true)
 .feature-card:hover {
   transform: translateY(-5px);
   background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 20px 45px rgba(3, 105, 161, 0.12);
+  box-shadow: var(--shadow-sm);
 }
 
 .feature-icon {
@@ -618,7 +615,7 @@ const hrOpen = ref(true)
 }
 
 .feature-card h3 {
-  color: #075985;
+  color: var(--primary-dark);
   margin: 0 0 0.55rem;
   font-size: 1.08rem;
 }
@@ -647,7 +644,7 @@ const hrOpen = ref(true)
 @media (max-width: 640px) {
   .hero-section {
     padding: 1.45rem;
-    border-radius: 24px;
+    border-radius: var(--radius-lg);
   }
 
   .hero-actions,

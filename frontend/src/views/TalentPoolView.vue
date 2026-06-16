@@ -294,7 +294,7 @@ const rejectCandidate = async () => {
   align-items: center;
   gap: 1.5rem;
   padding: 1.25rem 2rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   margin-bottom: 2.2rem;
   flex-wrap: wrap;
 }
@@ -373,7 +373,7 @@ const rejectCandidate = async () => {
 
 .skeleton-card {
   padding: 1.8rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   height: 290px;
   display: flex;
   flex-direction: column;
@@ -541,7 +541,7 @@ const rejectCandidate = async () => {
   max-width: 480px;
   position: relative;
   padding: 2.2rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   animation: slideUp 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 

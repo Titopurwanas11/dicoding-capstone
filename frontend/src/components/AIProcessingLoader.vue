@@ -220,7 +220,7 @@ const getStepStatusLabel = (idx) => {
   position: relative;
   overflow: hidden;
   padding: 2.5rem;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-strong);
@@ -301,20 +301,14 @@ const getStepStatusLabel = (idx) => {
   margin: 0;
   font-size: 1.85rem;
   font-weight: 850;
-  background: linear-gradient(135deg, #16A34A, #22C55E);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 
 .error-title {
   margin: 0;
   font-size: 1.85rem;
   font-weight: 850;
-  background: linear-gradient(135deg, #DC2626, #EF4444);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 
 .success-duration {
@@ -374,10 +368,7 @@ const getStepStatusLabel = (idx) => {
   margin: 0;
   font-size: 1.45rem;
   font-weight: 850;
-  background: linear-gradient(135deg, var(--primary-dark), var(--secondary), var(--indigo));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 
 .loader-message {
@@ -590,7 +581,7 @@ const getStepStatusLabel = (idx) => {
   width: 100%;
   background: rgba(255, 255, 255, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   padding: 2.2rem 1.8rem;
   text-align: center;
   display: flex;
@@ -620,18 +611,12 @@ const getStepStatusLabel = (idx) => {
   font-size: 3.25rem;
   font-weight: 900;
   line-height: 1;
-  background: linear-gradient(135deg, var(--text-soft), var(--primary-dark));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
   margin: 0.4rem 0;
 }
 
 .timer-value.timer-completed {
-  background: linear-gradient(135deg, #15803D, var(--success));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 
 .timer-sub {

@@ -144,7 +144,7 @@ const progressFillClass = computed(() => {
 <style scoped>
 .ranking-card {
   padding: 1.5rem;
-  border-radius: 22px;
+  border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.62);
   border: 1.5px solid var(--glass-border);
   box-shadow: var(--shadow-soft);

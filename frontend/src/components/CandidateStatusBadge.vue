@@ -51,11 +51,11 @@ function formatStatus(status) {
 /* Status variants */
 .status-screening {
   background: rgba(14, 165, 233, 0.1);
-  color: #0284c7;
+  color: var(--accent);
   border-color: rgba(14, 165, 233, 0.2);
 }
 .status-screening .badge-dot {
-  background: #0284c7;
+  background: var(--accent);
 }
 
 .status-talent_pool {

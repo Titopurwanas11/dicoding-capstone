@@ -60,7 +60,7 @@ defineExpose({ show, hide })
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
   z-index: 9999;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   border: 1px solid rgba(255, 255, 255, 0.6);
 }
 

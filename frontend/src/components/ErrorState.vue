@@ -73,7 +73,7 @@ const getDefaultMessage = (type) => {
   justify-content: center;
   text-align: center;
   padding: 2.5rem 2rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: var(--glass-bg);
   backdrop-filter: blur(var(--blur-amount));
   -webkit-backdrop-filter: blur(var(--blur-amount));

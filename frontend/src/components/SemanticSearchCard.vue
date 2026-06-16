@@ -67,7 +67,7 @@ const handleSubmit = () => {
 <style scoped>
 .search-card {
   padding: 2.2rem;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
@@ -106,10 +106,7 @@ const handleSubmit = () => {
   margin: 0;
   font-size: 1.35rem;
   font-weight: 850;
-  background: linear-gradient(135deg, var(--primary-dark), var(--secondary), var(--indigo));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 
 .search-subtitle {

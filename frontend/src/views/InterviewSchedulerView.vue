@@ -524,7 +524,7 @@ const submitDecision = async () => {
   align-items: center;
   gap: 1.2rem;
   padding: 1.2rem 1.6rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
 }
 
 .stat-icon-wrapper {
@@ -582,7 +582,7 @@ const submitDecision = async () => {
   align-items: center;
   gap: 1.5rem;
   padding: 1.25rem 2rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   margin-bottom: 2.2rem;
   flex-wrap: wrap;
 }
@@ -654,7 +654,7 @@ const submitDecision = async () => {
 
 .interview-card {
   padding: 1.8rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
@@ -873,7 +873,7 @@ const submitDecision = async () => {
   max-width: 500px;
   position: relative;
   padding: 2rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   animation: slideUp 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -1093,7 +1093,7 @@ const submitDecision = async () => {
 
 .skeleton-card {
   padding: 1.8rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   height: 250px;
   display: flex;
   flex-direction: column;

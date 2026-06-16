@@ -519,7 +519,7 @@ onMounted(() => {
 /* 1. Input Controls section styling */
 .form-group-container {
   padding: 2.2rem;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   margin-bottom: 2rem;
   background: rgba(255, 255, 255, 0.42);
 }
@@ -616,7 +616,7 @@ onMounted(() => {
   align-items: center;
   gap: 1.2rem;
   padding: 1.2rem 1.6rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.45);
   border: 1px solid var(--glass-border);
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.02);
@@ -688,7 +688,7 @@ onMounted(() => {
 /* 3. Top Recommendation Styling */
 .top-job-card {
   padding: 2.2rem;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(135deg, rgba(254, 243, 199, 0.55), rgba(255, 255, 255, 0.78));
   border: 1px solid rgba(245, 158, 11, 0.5);
   box-shadow: 0 16px 40px rgba(217, 119, 6, 0.08), 0 0 15px rgba(245, 158, 11, 0.15);
@@ -764,7 +764,7 @@ onMounted(() => {
 
 .job-result-card {
   padding: 1.6rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.62);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
@@ -895,7 +895,7 @@ onMounted(() => {
   margin-top: 2rem;
   text-align: center;
   gap: 1.1rem;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
 }
 
 .empty-icon {
@@ -928,7 +928,7 @@ onMounted(() => {
 
 .stat-card-skeleton {
   height: 90px;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: rgba(226, 232, 240, 0.3);
 }
 
@@ -945,7 +945,7 @@ onMounted(() => {
 
 .best-card-skeleton {
   height: 280px;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   background: rgba(226, 232, 240, 0.3);
 }
 
@@ -957,7 +957,7 @@ onMounted(() => {
 
 .ranking-card-skeleton {
   height: 180px;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: rgba(226, 232, 240, 0.3);
 }
 

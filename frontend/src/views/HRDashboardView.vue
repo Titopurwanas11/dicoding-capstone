@@ -347,7 +347,7 @@ const pieChartOptions = {
       labels: {
         boxWidth: 12,
         padding: 15,
-        font: { family: 'Plus Jakarta Sans', weight: '700', size: 10 },
+        font: { family: 'Inter', weight: '700', size: 10 },
         color: '#64748B'
       }
     }
@@ -384,7 +384,7 @@ const pieChartOptions = {
   border-radius: 999px;
   border: 1px solid rgba(14, 165, 233, 0.25);
   background: rgba(14, 165, 233, 0.12);
-  color: #075985;
+  color: var(--primary-dark);
   font-size: 0.78rem;
   font-weight: 800;
   padding: 0.35rem 0.68rem;
@@ -526,7 +526,7 @@ const pieChartOptions = {
   align-items: center;
   text-align: center;
   padding: 1.5rem 2rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
@@ -566,7 +566,7 @@ const pieChartOptions = {
 
 .distribution-chart-card {
   padding: 1.75rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
@@ -596,7 +596,7 @@ const pieChartOptions = {
 
 .chart-box {
   padding: 2.25rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   min-height: 380px;
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid var(--glass-border);
@@ -622,7 +622,7 @@ const pieChartOptions = {
 .empty-wrapper {
   padding: 4rem 2rem;
   text-align: center;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
 }
 
 .error-state,
@@ -676,7 +676,7 @@ const pieChartOptions = {
 
 .skeleton-card {
   height: 130px;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   position: relative;
   overflow: hidden;
 }
@@ -703,7 +703,7 @@ const pieChartOptions = {
 
 .skeleton-chart-box {
   height: 320px;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   position: relative;
   overflow: hidden;
 }

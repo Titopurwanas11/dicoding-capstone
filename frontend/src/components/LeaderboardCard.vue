@@ -64,7 +64,7 @@ const getItemClass = (rank) => {
 <style scoped>
 .leaderboard-card {
   padding: 1.8rem;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);

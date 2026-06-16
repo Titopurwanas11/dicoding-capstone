@@ -302,10 +302,7 @@ const handleSearch = async (query) => {
   margin-bottom: 0.5rem;
   font-weight: 800;
   font-size: clamp(1.65rem, 3vw, 2.25rem);
-  background: linear-gradient(135deg, var(--primary-dark), var(--secondary), var(--indigo));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 
 .subtitle {
@@ -339,7 +336,7 @@ const handleSearch = async (query) => {
   padding: 1.1rem 1.4rem;
   background: rgba(255, 255, 255, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.65);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.015);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
@@ -427,7 +424,7 @@ const handleSearch = async (query) => {
   margin-top: 2rem;
   text-align: center;
   gap: 1.2rem;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);

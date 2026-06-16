@@ -249,7 +249,7 @@ const colorTheme = computed(() => {
   margin-top: 2rem;
   padding: 2.2rem;
   text-align: left;
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
@@ -278,10 +278,7 @@ const colorTheme = computed(() => {
   margin: 0;
   font-size: 1.4rem;
   font-weight: 850;
-  background: linear-gradient(135deg, var(--primary-dark), var(--secondary), var(--indigo));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 
 /* 8. Domain Badge Enhancement */
@@ -323,7 +320,7 @@ const colorTheme = computed(() => {
 .sub-glass-card {
   background: rgba(255, 255, 255, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.65);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   padding: 1.6rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.015);
@@ -770,7 +767,7 @@ const colorTheme = computed(() => {
 .theme-good {
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(56, 189, 248, 0.18)) !important;
   border-color: rgba(14, 165, 233, 0.4) !important;
-  color: #0284c7 !important;
+  color: var(--accent) !important;
   box-shadow: 0 12px 32px rgba(14, 165, 233, 0.12), inset 0 2px 4px rgba(255,255,255,0.6) !important;
 }
 .theme-moderate {
@@ -794,7 +791,7 @@ const colorTheme = computed(() => {
   color: transparent !important;
 }
 .score-text.theme-good {
-  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  background: linear-gradient(135deg, var(--accent), #0ea5e9);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent !important;

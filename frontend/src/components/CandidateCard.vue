@@ -151,7 +151,7 @@ function formatDate(dateStr) {
 <style scoped>
 .candidate-card {
   padding: 1.8rem;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
@@ -178,7 +178,7 @@ function formatDate(dateStr) {
   content: '';
   position: absolute;
   inset: -1.5px;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.5), rgba(74, 222, 128, 0.2), rgba(14, 165, 233, 0.3));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;

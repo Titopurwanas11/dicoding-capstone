@@ -469,10 +469,7 @@ const matchDetailed = async () => {
 }
 
 .score-danger .score-value {
-  background: linear-gradient(135deg, #DC2626, #EF4444);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 
 .score-warning {
@@ -485,10 +482,7 @@ const matchDetailed = async () => {
 }
 
 .score-warning .score-value {
-  background: linear-gradient(135deg, #D97706, #F59E0B);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 
 .score-success {
@@ -501,10 +495,7 @@ const matchDetailed = async () => {
 }
 
 .score-success .score-value {
-  background: linear-gradient(135deg, #16A34A, #22C55E);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text);
 }
 .empty-state-panel {
   display: flex;

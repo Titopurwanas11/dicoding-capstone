@@ -263,7 +263,7 @@ onMounted(() => {
   border-radius: 999px;
   border: 1px solid rgba(14, 165, 233, 0.25);
   background: rgba(14, 165, 233, 0.12);
-  color: #075985;
+  color: var(--primary-dark);
   font-size: 0.78rem;
   font-weight: 800;
   padding: 0.35rem 0.68rem;
@@ -322,7 +322,7 @@ onMounted(() => {
   align-items: center;
   font-size: 2.5rem;
   font-weight: 800;
-  box-shadow: 0 12px 28px rgba(3, 105, 161, 0.22);
+  box-shadow: var(--shadow-sm);
 }
 
 .profile-info {
