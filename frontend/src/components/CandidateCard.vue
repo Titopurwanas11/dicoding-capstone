@@ -18,6 +18,24 @@
       </div>
     </div>
 
+    <!-- Candidate Meta Info (Job Position, Date, Status) -->
+    <div class="candidate-meta" v-if="jobPosition || dateAdded || status">
+      <div class="meta-row" v-if="jobPosition">
+        <span class="meta-icon">💼</span>
+        <span class="meta-text">{{ jobPosition }}</span>
+      </div>
+      <div class="meta-row" v-if="dateAdded">
+        <span class="meta-icon">📅</span>
+        <span class="meta-text">Added on {{ formatDate(dateAdded) }}</span>
+      </div>
+      <div class="meta-row" v-if="status">
+        <span class="meta-icon">🛡️</span>
+        <span class="meta-text">
+          <CandidateStatusBadge :status="status" />
+        </span>
+      </div>
+    </div>
+
     <!-- Match Visualization Progress Bar -->
     <div class="progress-section">
       <div class="progress-header">
@@ -33,23 +51,39 @@
       </div>
     </div>
 
-    <!-- Skills Section -->
-    <div class="skills-section">
+    <!-- Skills Section (Only if skills are present and not empty) -->
+    <div class="skills-section" v-if="skills && skills.length">
       <h4 class="skills-title">Key Skills</h4>
       <div class="skills-pills">
         <span v-for="skill in skills" :key="skill" class="skill-pill">
           {{ skill }}
         </span>
-        <span v-if="!skills || !skills.length" class="no-skills">
-          No key skills listed.
-        </span>
       </div>
+    </div>
+
+    <!-- Action Buttons Row -->
+    <div class="card-actions" v-if="showActions">
+      <button 
+        type="button" 
+        class="btn-action btn-interview"
+        @click.stop="$emit('move-to-interview')"
+      >
+        <span>📅</span> Move to Interview
+      </button>
+      <button 
+        type="button" 
+        class="btn-action btn-reject"
+        @click.stop="$emit('remove')"
+      >
+        <span>❌</span> Remove
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import CandidateStatusBadge from './CandidateStatusBadge.vue'
 
 const props = defineProps({
   name: {
@@ -67,8 +101,26 @@ const props = defineProps({
   rank: {
     type: Number,
     required: true
+  },
+  jobPosition: {
+    type: String,
+    default: ''
+  },
+  dateAdded: {
+    type: String,
+    default: ''
+  },
+  status: {
+    type: String,
+    default: ''
+  },
+  showActions: {
+    type: Boolean,
+    default: false
   }
 })
+
+defineEmits(['move-to-interview', 'remove'])
 
 // Determine styling class based on similarity score
 const scoreClass = computed(() => {
@@ -84,6 +136,16 @@ const scoreProgressClass = computed(() => {
   if (props.score >= 60) return 'bg-amber'
   return 'bg-red'
 })
+
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  try {
+    const d = new Date(dateStr)
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  } catch (e) {
+    return dateStr
+  }
+}
 </script>
 
 <style scoped>
@@ -227,6 +289,32 @@ const scoreProgressClass = computed(() => {
   color: #DC2626;
 }
 
+/* Candidate Meta Info styling */
+.candidate-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid rgba(14, 116, 144, 0.08);
+  border-bottom: 1px solid rgba(14, 116, 144, 0.08);
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+  color: var(--text-soft);
+}
+
+.meta-icon {
+  font-size: 1rem;
+}
+
+.meta-text {
+  font-weight: 500;
+}
+
 /* Progress bar section */
 .progress-section {
   display: flex;
@@ -321,9 +409,49 @@ const scoreProgressClass = computed(() => {
   box-shadow: 0 4px 10px rgba(14, 165, 233, 0.15);
 }
 
-.no-skills {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-style: italic;
+/* Card Actions styling */
+.card-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.btn-action {
+  flex: 1;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.btn-interview {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16A34A;
+  border-color: rgba(34, 197, 94, 0.22);
+}
+
+.btn-interview:hover {
+  background: #16A34A;
+  color: white;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+}
+
+.btn-reject {
+  background: rgba(239, 68, 68, 0.12);
+  color: #DC2626;
+  border-color: rgba(239, 68, 68, 0.22);
+}
+
+.btn-reject:hover {
+  background: #DC2626;
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
 }
 </style>

@@ -63,12 +63,37 @@
           </div>
         </div>
       </div>
+
+      <!-- Actions row (only shown if status is 'screening' and showActions is true) -->
+      <div class="card-actions" v-if="status === 'screening' && showActions">
+        <button 
+          type="button" 
+          class="btn-action btn-pool"
+          @click.stop="$emit('move-to-talent-pool')"
+        >
+          <span>👥</span> Move to Talent Pool
+        </button>
+        <button 
+          type="button" 
+          class="btn-action btn-interview"
+          @click.stop="$emit('move-to-interview')"
+        >
+          <span>📅</span> Move to Interview
+        </button>
+      </div>
+
+      <!-- Status display if not screening -->
+      <div class="status-display" v-else-if="status">
+        <span class="status-label-text">Status:</span>
+        <CandidateStatusBadge :status="status" />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import CandidateStatusBadge from './CandidateStatusBadge.vue'
 
 const props = defineProps({
   name: {
@@ -106,8 +131,18 @@ const props = defineProps({
   filename: {
     type: String,
     default: ''
+  },
+  status: {
+    type: String,
+    default: 'screening'
+  },
+  showActions: {
+    type: Boolean,
+    default: true
   }
 })
+
+defineEmits(['move-to-talent-pool', 'move-to-interview'])
 </script>
 
 <style scoped>
@@ -315,6 +350,69 @@ const props = defineProps({
   color: var(--text-muted);
   font-weight: 700;
   align-self: center;
+}
+
+/* Card Actions styling */
+.card-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(14, 116, 144, 0.06);
+  padding-top: 1.2rem;
+}
+
+.btn-action {
+  flex: 1;
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.btn-pool {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4F46E5;
+  border-color: rgba(99, 102, 241, 0.22);
+}
+
+.btn-pool:hover {
+  background: #4F46E5;
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.btn-interview {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16A34A;
+  border-color: rgba(34, 197, 94, 0.22);
+}
+
+.btn-interview:hover {
+  background: #16A34A;
+  color: white;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.25);
+}
+
+/* Status display styling */
+.status-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(14, 116, 144, 0.06);
+  padding-top: 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.status-label-text {
+  color: var(--text-muted);
 }
 
 @media (max-width: 600px) {

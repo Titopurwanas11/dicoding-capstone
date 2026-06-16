@@ -13,3 +13,8 @@ def get_users_collection():
     collection = db.users
     collection.create_index("email", unique=True)
     return collection
+
+def get_candidates_collection():
+    """Get the candidates collection for Talent Pool Management."""
+    return db.candidates
+

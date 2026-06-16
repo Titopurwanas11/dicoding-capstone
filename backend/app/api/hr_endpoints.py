@@ -1,15 +1,15 @@
-from fastapi import APIRouter, UploadFile, File, Form, Body, BackgroundTasks, Depends
+from fastapi import APIRouter, UploadFile, File, Form, Body, BackgroundTasks, Depends, Path, HTTPException
 from typing import List, Tuple, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.core.auth import require_role
 import time
 import asyncio
-from sklearn.cluster import KMeans
 from sentence_transformers import util
+from bson import ObjectId
+from datetime import datetime, timezone
 
 from app.services.parser import extract_text, extract_candidate_name, clean_text
 from app.services.nlp import (
-    cluster_documents,
     get_similarity_score,
     match_cv_jd_hybrid,
     extract_phrases,
@@ -19,13 +19,14 @@ from app.services.nlp import (
     extract_jd_target_skills
 )
 from app.core.domain_loader import load_domain_config
+from app.core.mongodb import get_candidates_collection
 from app.core.metrics import (
     REQUEST_COUNT,
     REQUEST_LATENCY,
-    HR_RANKING_COUNT,
-    CLUSTERING_COUNT
+    HR_RANKING_COUNT
 )
 from app.services.progress import progress_manager
+
 
 router = APIRouter()
 
@@ -150,12 +151,39 @@ async def rank_candidates(
             reverse=True
         )
 
-        # Add ranking
+        # Job title from job_description
+        first_line = job_description.strip().split('\n')[0].strip()
+        job_title = first_line[:100] if len(first_line) > 100 else first_line
+        if not job_title:
+            job_title = "Unknown Position"
+
+        # Add ranking and save to DB
+        candidates_col = get_candidates_collection()
         for i, candidate in enumerate(
             candidates,
             start=1
         ):
             candidate["rank"] = i
+            
+            candidate_doc = {
+                "candidate_name": candidate["name"],
+                "match_score": candidate["score"],
+                "job_title": job_title,
+                "status": "screening",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "semantic_score": candidate["semantic_score"],
+                "domain_skill_score": candidate["domain_skill_score"],
+                "matched_skills_count": candidate["matched_skills_count"],
+                "missing_skills_count": candidate["missing_skills_count"],
+                "matched_skills": candidate["matched_skills"],
+                "missing_skills": candidate["missing_skills"],
+                "skill_scores": candidate["skill_scores"],
+                "domain": candidate["domain"],
+                "filename": candidate["filename"]
+            }
+            
+            result = candidates_col.insert_one(candidate_doc)
+            candidate["id"] = str(result.inserted_id)
 
         return candidates
 
@@ -166,53 +194,6 @@ async def rank_candidates(
             time.time() - start_time
         )
 
-
-@router.post("/hr/cluster")
-async def cluster_candidates(
-    cvs: List[UploadFile] = File(...),
-    num_clusters: int = Form(3),
-    current_user: dict = Depends(require_role("hr"))
-):
-    start_time = time.time()
-
-    REQUEST_COUNT.labels(
-        endpoint="hr_cluster"
-    ).inc()
-
-    CLUSTERING_COUNT.inc()
-
-    try:
-
-        texts = []
-        filenames = []
-
-        for cv in cvs:
-
-            file_bytes = await cv.read()
-
-            cv_text = extract_text(
-                file_bytes,
-                cv.filename
-            )
-
-            texts.append(cv_text)
-            filenames.append(cv.filename)
-
-        clusters = cluster_documents(
-            texts,
-            filenames,
-            num_clusters
-        )
-
-        return clusters
-
-    finally:
-
-        REQUEST_LATENCY.labels(
-            endpoint="hr_cluster"
-        ).observe(
-            time.time() - start_time
-        )
 
 
 # ==========================================
@@ -268,75 +249,42 @@ def run_hr_rank_task(job_id: str, cv_files: List[Tuple[bytes, str]], job_descrip
         
         progress_manager.update_progress(job_id, 75, "Ranking Candidates")
         candidates.sort(key=lambda x: x["score"], reverse=True)
+        
+        # Job title from job_description
+        first_line = job_description.strip().split('\n')[0].strip()
+        job_title = first_line[:100] if len(first_line) > 100 else first_line
+        if not job_title:
+            job_title = "Unknown Position"
+
+        candidates_col = get_candidates_collection()
         for i, candidate in enumerate(candidates, start=1):
             candidate["rank"] = i
+            
+            candidate_doc = {
+                "candidate_name": candidate["name"],
+                "match_score": candidate["score"],
+                "job_title": job_title,
+                "status": "screening",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "semantic_score": candidate["semantic_score"],
+                "domain_skill_score": candidate["domain_skill_score"],
+                "matched_skills_count": candidate["matched_skills_count"],
+                "missing_skills_count": candidate["missing_skills_count"],
+                "matched_skills": candidate["matched_skills"],
+                "missing_skills": candidate["missing_skills"],
+                "skill_scores": candidate["skill_scores"],
+                "domain": candidate["domain"],
+                "filename": candidate["filename"]
+            }
+            
+            result = candidates_col.insert_one(candidate_doc)
+            candidate["id"] = str(result.inserted_id)
+
         time.sleep(0.2)
-        
         progress_manager.complete_job(job_id, candidates)
     except Exception as e:
         progress_manager.fail_job(job_id, f"Failed to rank: {str(e)}")
 
-
-def run_hr_cluster_task(job_id: str, cv_files: List[Tuple[bytes, str]], num_clusters: int):
-    try:
-        progress_manager.update_progress(job_id, 10, "Parsing CVs")
-        texts = []
-        filenames = []
-        for file_bytes, filename in cv_files:
-            cv_text = extract_text(file_bytes, filename)
-            texts.append(cv_text)
-            filenames.append(filename)
-        time.sleep(0.3)
-        
-        progress_manager.update_progress(job_id, 30, "Generating Embeddings")
-        time.sleep(0.3)
-        
-        progress_manager.update_progress(job_id, 60, "Clustering Candidates")
-        actual_num_clusters = num_clusters
-        if len(texts) < actual_num_clusters:
-            actual_num_clusters = len(texts)
-            
-        embeddings = model.encode(texts)
-        kmeans = KMeans(n_clusters=actual_num_clusters, random_state=42, n_init=10)
-        kmeans.fit(embeddings)
-        labels = kmeans.labels_
-        time.sleep(0.3)
-        
-        progress_manager.update_progress(job_id, 85, "Building Clusters")
-        clusters = {i: [] for i in range(actual_num_clusters)}
-        for idx, label in enumerate(labels):
-            clusters[label].append({
-                "filename": filenames[idx],
-                "text": texts[idx]
-            })
-            
-        result = []
-        for cluster_id, items in clusters.items():
-            combined_text = " ".join([item["text"] for item in items])
-            cluster_phrases = extract_phrases(combined_text)
-            
-            if cluster_phrases:
-                phrase_embs = model.encode(cluster_phrases[:50], convert_to_tensor=True)
-                cluster_skills = []
-                for skill_name, skill_emb in get_skill_embeddings_for_skills([]).items():
-                    similarities = util.cos_sim(skill_emb, phrase_embs)[0]
-                    max_sim = similarities.max().item()
-                    if max_sim > 0.82:
-                        cluster_skills.append(skill_name)
-                suggested_label = " / ".join(cluster_skills[:3]) if cluster_skills else f"Cluster {cluster_id + 1}"
-            else:
-                suggested_label = f"Cluster {cluster_id + 1}"
-                
-            result.append({
-                "cluster_id": cluster_id,
-                "suggested_label": suggested_label,
-                "candidates": [item["filename"] for item in items]
-            })
-        time.sleep(0.2)
-        
-        progress_manager.complete_job(job_id, result)
-    except Exception as e:
-        progress_manager.fail_job(job_id, f"Failed to cluster: {str(e)}")
 
 @router.post("/hr/rank/start")
 async def start_rank_candidates(
@@ -365,29 +313,7 @@ async def start_rank_candidates(
     )
     return {"job_id": job_id}
 
-@router.post("/hr/cluster/start")
-async def start_cluster_candidates(
-    background_tasks: BackgroundTasks,
-    cvs: List[UploadFile] = File(...),
-    num_clusters: int = Form(3),
-    current_user: dict = Depends(require_role("hr"))
-):
-    REQUEST_COUNT.labels(endpoint="hr_cluster_start").inc()
-    CLUSTERING_COUNT.inc()
-    
-    cv_files = []
-    for cv in cvs:
-        file_bytes = await cv.read()
-        cv_files.append((file_bytes, cv.filename))
-        
-    job_id = progress_manager.create_job()
-    background_tasks.add_task(
-        run_hr_cluster_task,
-        job_id,
-        cv_files,
-        num_clusters
-    )
-    return {"job_id": job_id}
+
 
 @router.post("/hr/generate-questions")
 async def generate_interview_questions(
@@ -409,4 +335,75 @@ async def generate_interview_questions(
         questions.append("How do you handle learning new technologies on the job?")
         
     return {"questions": questions}
+
+
+class StatusUpdate(BaseModel):
+    status: str = Field(..., pattern="^(screening|talent_pool|interview|hired|rejected)$")
+
+
+@router.get("/candidates", response_model=List[Dict[str, Any]])
+async def get_candidates(current_user: dict = Depends(require_role("hr"))):
+    candidates_col = get_candidates_collection()
+    results = list(candidates_col.find().sort("created_at", -1))
+    for r in results:
+        r["id"] = str(r["_id"])
+        del r["_id"]
+    return results
+
+
+@router.get("/talent-pool", response_model=List[Dict[str, Any]])
+async def get_talent_pool(current_user: dict = Depends(require_role("hr"))):
+    candidates_col = get_candidates_collection()
+    results = list(candidates_col.find({"status": "talent_pool"}).sort([
+        ("match_score", -1),
+        ("created_at", -1)
+    ]))
+    for r in results:
+        r["id"] = str(r["_id"])
+        del r["_id"]
+    return results
+
+
+@router.patch("/candidates/{id}/status")
+async def update_candidate_status(
+    id: str = Path(..., description="The ID of the candidate"),
+    status_update: StatusUpdate = Body(...),
+    current_user: dict = Depends(require_role("hr"))
+):
+    try:
+        obj_id = ObjectId(id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid candidate ID format")
+        
+    candidates_col = get_candidates_collection()
+    result = candidates_col.update_one(
+        {"_id": obj_id},
+        {"$set": {"status": status_update.status}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+        
+    return {"status": "success", "message": f"Candidate status updated to {status_update.status}"}
+
+
+@router.get("/dashboard/hr-stats")
+async def get_hr_stats(current_user: dict = Depends(require_role("hr"))):
+    candidates_col = get_candidates_collection()
+    
+    total = candidates_col.count_documents({})
+    screening = candidates_col.count_documents({"status": "screening"})
+    talent_pool = candidates_col.count_documents({"status": "talent_pool"})
+    interview = candidates_col.count_documents({"status": "interview"})
+    rejected = candidates_col.count_documents({"status": "rejected"})
+    hired = candidates_col.count_documents({"status": "hired"})
+    
+    return {
+        "total_candidates": total,
+        "screening": screening,
+        "talent_pool": talent_pool,
+        "interview": interview,
+        "rejected": rejected,
+        "hired": hired
+    }
+
 

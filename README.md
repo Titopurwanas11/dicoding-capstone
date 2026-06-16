@@ -2,9 +2,9 @@
 
 ## 📖 Overview
 
-**CV Matcher Pro** is an AI-powered recruitment and talent analytics platform designed to automate candidate screening, job matching, semantic job recommendation, and candidate clustering using Natural Language Processing (NLP) and Sentence Transformers. 
+**CV Matcher Pro** is an AI-powered recruitment and talent analytics platform designed to automate candidate screening, job matching, semantic job recommendation, and talent pool management using Natural Language Processing (NLP) and Sentence Transformers. 
 
-The system leverages a fine-tuned multilingual Bi-Encoder to support both **Job Seekers** and **Recruiters / HR Professionals** through highly accurate semantic search, explainable AI matching, and batch candidate segmentation.
+The system leverages a fine-tuned multilingual Bi-Encoder to support both **Job Seekers** and **Recruiters / HR Professionals** through highly accurate semantic search, explainable AI matching, and talent pool tracking.
 
 ---
 
@@ -60,9 +60,9 @@ graph TD
 
     > **Domain Alignment Rule**: IT CV + IT JD → highest score. IT CV + Finance JD → lower score (0% domain relevance bonus).
 
-*   **Candidate Clustering**: 
-    Perform K-Means clustering on candidate CV embeddings to group similar talents together dynamically (e.g., separating backend, frontend, and QA candidates).
-    *   *Benefits*: Automated talent segmentation, bulk campaign processing, and targeted candidate screening.
+*   **Talent Pool**: 
+    Store promising candidates who are not selected for immediate interview but may be useful in future recruitment. Candidates are sorted by match score and addition date, allowing search, filtering, and status updates.
+    *   *Benefits*: Centralized talent storage, candidate pipeline status tracking, and easy search/filtering.
 
 *   **Explainable AI (XAI)**: 
     Every match analysis is backed by an automated explanation that breaks down matched skills, missing competencies, and a reasoning summary:
@@ -142,7 +142,7 @@ Real-time metrics are scraped from the FastAPI `/metrics` endpoint to log API be
 | `cv_matcher_analysis_total` | Counter | Total CV-JD match analysis requests |
 | `semantic_search_total` | Counter | Total semantic job search requests |
 | `hr_ranking_total` | Counter | Total HR ranking requests |
-| `cv_clustering_total` | Counter | Total CV clustering requests |
+| `talent_pool_total` | Counter | Total talent pool requests |
 
 ### 📉 Visualization Dashboard (Grafana)
 A pre-configured dashboard displays real-time API health, latency metrics, and throughput.
@@ -188,7 +188,7 @@ python -m pytest test --cov=app --cov-report=term
 *   `test_match_api.py`: Tests CV-JD detailed matching endpoint with mocks.
 *   `test_semantic_search.py`: Validates vector search with MongoDB mocks.
 *   `test_hr_rank.py`: Tests the HR bulk candidate ranking logic.
-*   `test_hr_cluster.py`: Tests candidate K-Means document clustering.
+*   `test_talent_pool.py`: Tests candidate status transitions and talent pool operations.
 
 ### CI/CD Workflow
 Implemented using GitHub Actions (`.github/workflows/backend.yml`), triggers automatically on `push` and `pull_request` to verify the codebase:
@@ -211,7 +211,7 @@ Implemented using GitHub Actions (`.github/workflows/backend.yml`), triggers aut
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── endpoints.py       # Core APIs (scrape, match, search)
-│   │   │   ├── hr_endpoints.py    # HR APIs (rank, cluster)
+│   │   │   ├── hr_endpoints.py    # HR APIs (rank, talent-pool, stats)
 │   │   │   └── jobs_endpoints.py  # Jobs operations
 │   │   ├── core/
 │   │   │   ├── domain_loader.py   # Dynamic domain config loader
@@ -243,7 +243,7 @@ Implemented using GitHub Actions (`.github/workflows/backend.yml`), triggers aut
 │   │   ├── components/            # Reusable UI components
 │   │   │   ├── ErrorState.vue     # Reusable error display component (4 types)
 │   │   │   └── FloatingErrorBanner.vue # Non-intrusive toast-style error banner
-│   │   ├── views/                 # View pages (Analyze, Cluster, Scrape, Rank, etc.)
+│   │   ├── views/                 # View pages (Analyze, TalentPool, Scrape, Rank, etc.)
 │   │   ├── router/                # Vue Router configuration
 │   │   ├── App.vue                # Root App component
 │   │   └── main.js                # App entrypoint
@@ -452,10 +452,10 @@ Once deployed, the following services are available:
 *   `POST /api/jobs/semantic-search`: Semantic vector search against MongoDB job collection.
 
 ### 👥 Recruiter / HR Endpoints
-*   `POST /api/hr/rank`: Bulk CV ranking against a JD — uses same 3-component smart scoring as CV-JD Analysis.
-*   `POST /api/hr/rank/start`: SSE-based background HR ranking with real-time progress.
-*   `POST /api/hr/cluster`: Groups multiple CVs into distinct talent categories via K-Means.
-*   `POST /api/hr/cluster/start`: SSE-based background clustering.
+*   `GET /api/talent-pool`: Retrieves candidates stored in the Talent Pool.
+*   `GET /api/candidates`: Retrieves all candidates.
+*   `PATCH /api/candidates/{id}/status`: Updates candidate status.
+*   `GET /api/dashboard/hr-stats`: Retrieves HR dashboard stats.
 
 ### 💾 Database Utilities
 *   `GET /api/jobs`: Fetches all jobs stored in the database.

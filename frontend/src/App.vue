@@ -83,8 +83,8 @@
               <router-link to="/hr/rank" active-class="is-active" @click="closeMenus">
                 Bulk CV Ranking
               </router-link>
-              <router-link to="/hr/cluster" active-class="is-active" @click="closeMenus">
-                Talent Clustering
+              <router-link to="/hr/talent-pool" active-class="is-active" @click="closeMenus">
+                Talent Pool
               </router-link>
             </div>
           </div>

@@ -22,7 +22,10 @@
         </div>
 
         <div class="candidate-info">
-          <span class="candidate-name">{{ candidate.name }}</span>
+          <div class="name-row-wrapper">
+            <span class="candidate-name">{{ candidate.name }}</span>
+            <CandidateStatusBadge v-if="candidate.status" :status="candidate.status" class="mini-status" />
+          </div>
           <span class="candidate-file" v-if="candidate.filename">{{ candidate.filename }}</span>
         </div>
 
@@ -39,6 +42,8 @@
 </template>
 
 <script setup>
+import CandidateStatusBadge from './CandidateStatusBadge.vue'
+
 const props = defineProps({
   candidates: {
     type: Array,
@@ -46,7 +51,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['select-candidate'])
+defineEmits(['select-candidate'])
 
 const getItemClass = (rank) => {
   if (rank === 1) return 'rank-1-gold'
@@ -235,8 +240,20 @@ const getItemClass = (rank) => {
   gap: 0.2rem;
 }
 
+.name-row-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .candidate-name {
   font-size: 1.05rem;
+}
+
+.mini-status {
+  transform: scale(0.8);
+  transform-origin: left center;
 }
 
 .candidate-file {

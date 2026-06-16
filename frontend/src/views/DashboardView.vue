@@ -12,6 +12,62 @@
       </div>
     </header>
 
+    <!-- HR Dashboard Statistics Cards -->
+    <div v-if="isHrRole" class="hr-stats-container">
+      <div v-if="statsLoading" class="stats-loading-shimmer glass-panel">
+        Loading recruitment statistics...
+      </div>
+      <div v-else-if="statsError" class="stats-error-banner glass-panel">
+        ⚠️ Failed to load statistics. <button @click="fetchHrStats" class="btn-retry-stats">Retry</button>
+      </div>
+      <div v-else class="stats-row">
+        <!-- Total Candidates -->
+        <div class="stat-card glass-panel border-blue">
+          <div class="stat-icon-bg primary-bg">👥</div>
+          <div class="stat-details">
+            <span class="stat-val">{{ hrStats.total_candidates }}</span>
+            <span class="stat-lbl">Total Candidates</span>
+          </div>
+        </div>
+        
+        <!-- Screening -->
+        <div class="stat-card glass-panel border-cyan">
+          <div class="stat-icon-bg cyan-bg">🔍</div>
+          <div class="stat-details">
+            <span class="stat-val">{{ hrStats.screening }}</span>
+            <span class="stat-lbl">Screening</span>
+          </div>
+        </div>
+
+        <!-- Talent Pool -->
+        <div class="stat-card glass-panel border-purple">
+          <div class="stat-icon-bg purple-bg">📂</div>
+          <div class="stat-details">
+            <span class="stat-val">{{ hrStats.talent_pool }}</span>
+            <span class="stat-lbl">Talent Pool</span>
+          </div>
+        </div>
+
+        <!-- Interview -->
+        <div class="stat-card glass-panel border-amber">
+          <div class="stat-icon-bg amber-bg">📅</div>
+          <div class="stat-details">
+            <span class="stat-val">{{ hrStats.interview }}</span>
+            <span class="stat-lbl">Interviews</span>
+          </div>
+        </div>
+
+        <!-- Rejected -->
+        <div class="stat-card glass-panel border-red">
+          <div class="stat-icon-bg red-bg">❌</div>
+          <div class="stat-details">
+            <span class="stat-val">{{ hrStats.rejected }}</span>
+            <span class="stat-lbl">Rejected</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Layout Grid -->
     <div class="dashboard-grid">
       <!-- Profile Card -->
@@ -59,25 +115,14 @@
             </div>
           </router-link>
 
-          <router-link to="/hr/cluster" class="action-card glass-panel">
-            <span class="action-icon">🧩</span>
-            <div class="action-content-card">
-              <h4>Talent Clustering</h4>
-              <p>Segment candidates into skill clusters automatically using machine learning.</p>
-              <span class="action-link-text">Open Module →</span>
-            </div>
-          </router-link>
-
-          <!-- Future Modules: Talent Pool & Interview (Easy to extend) -->
-          <div class="action-card glass-panel disabled">
-            <span class="coming-soon-badge">Coming Soon</span>
+          <router-link to="/hr/talent-pool" class="action-card glass-panel">
             <span class="action-icon">👥</span>
             <div class="action-content-card">
               <h4>Talent Pool Management</h4>
               <p>Store, filter, and track top matching profiles for future vacancies.</p>
-              <span class="action-link-text disabled-text">Locked</span>
+              <span class="action-link-text">Open Module →</span>
             </div>
-          </div>
+          </router-link>
 
           <div class="action-card glass-panel disabled">
             <span class="coming-soon-badge">Coming Soon</span>
@@ -116,8 +161,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { authState } from '../stores/auth'
+import axios from 'axios'
+import { API_BASE_URL } from '../config/api'
 
 const user = computed(() => authState.user || {})
 
@@ -129,6 +176,37 @@ const isHrRole = computed(() => user.value.role === 'hr')
 
 const userInitial = computed(() => {
   return userName.value.charAt(0).toUpperCase()
+})
+
+// HR Stats states
+const hrStats = ref({
+  total_candidates: 0,
+  screening: 0,
+  talent_pool: 0,
+  interview: 0,
+  rejected: 0,
+  hired: 0
+})
+const statsLoading = ref(false)
+const statsError = ref(false)
+
+const fetchHrStats = async () => {
+  if (!isHrRole.value) return
+  statsLoading.value = true
+  statsError.value = false
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/dashboard/hr-stats`)
+    hrStats.value = res.data
+  } catch (error) {
+    console.error(error)
+    statsError.value = true
+  } finally {
+    statsLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchHrStats()
 })
 </script>
 
@@ -389,5 +467,130 @@ const userInitial = computed(() => {
     flex-direction: column;
     gap: 1rem;
   }
+}
+
+/* HR Stats Cards Styling */
+.hr-stats-container {
+  margin-bottom: 2rem;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .stats-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.25s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-strong);
+}
+
+.stat-icon-bg {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.primary-bg {
+  background-color: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+}
+
+.cyan-bg {
+  background-color: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+}
+
+.purple-bg {
+  background-color: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.amber-bg {
+  background-color: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.red-bg {
+  background-color: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.stat-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-val {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--text-soft);
+  line-height: 1.2;
+}
+
+.stat-lbl {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Border Glows */
+.border-blue:hover { border-color: rgba(14, 165, 233, 0.45); }
+.border-cyan:hover { border-color: rgba(34, 211, 238, 0.45); }
+.border-purple:hover { border-color: rgba(139, 92, 246, 0.45); }
+.border-amber:hover { border-color: rgba(245, 158, 11, 0.45); }
+.border-red:hover { border-color: rgba(239, 68, 68, 0.45); }
+
+.stats-loading-shimmer, .stats-error-banner {
+  padding: 1.5rem;
+  text-align: center;
+  border-radius: 20px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.btn-retry-stats {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.35rem 0.8rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.btn-retry-stats:hover {
+  background: var(--primary-dark);
 }
 </style>

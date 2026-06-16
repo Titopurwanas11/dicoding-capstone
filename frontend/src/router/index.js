@@ -4,7 +4,7 @@ import ScrapeView from '../views/ScrapeView.vue'
 import AnalyzeView from '../views/AnalyzeView.vue'
 import HRRankView from '../views/HRRankView.vue'
 import SemanticSearchView from '../views/SemanticSearchView.vue'
-import ClusterView from '../views/ClusterView.vue'
+import TalentPoolView from '../views/TalentPoolView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import DashboardView from '../views/DashboardView.vue'
@@ -67,10 +67,10 @@ const routes = [
     } 
   },
   { 
-    path: '/hr/cluster', 
-    component: ClusterView, 
+    path: '/hr/talent-pool', 
+    component: TalentPoolView, 
     meta: { 
-      title: 'Talent Clustering',
+      title: 'Talent Pool',
       requiresAuth: true,
       roles: ['hr']
     } 

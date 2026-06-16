@@ -148,8 +148,11 @@
               :matched-skills="bestCandidate.matched_skills"
               :missing-skills="bestCandidate.missing_skills"
               :filename="bestCandidate.filename"
+              :status="bestCandidate.status"
               style="cursor: pointer;"
               @click="openModal(bestCandidate)"
+              @move-to-talent-pool="handleMoveToTalentPool(bestCandidate)"
+              @move-to-interview="handleMoveToInterview(bestCandidate)"
             />
           </div>
 
@@ -182,8 +185,11 @@
               :matched-count="r.matched_skills_count"
               :missing-count="r.missing_skills_count"
               :filename="r.filename"
+              :status="r.status"
               style="cursor: pointer;"
               @click="openModal(r)"
+              @move-to-talent-pool="handleMoveToTalentPool(r)"
+              @move-to-interview="handleMoveToInterview(r)"
             />
           </div>
         </div>
@@ -406,7 +412,10 @@ const rankCVs = async () => {
           setTimeout(async () => {
             try {
               const resultRes = await axios.get(`${API_BASE_URL}/api/result/${jobId}`)
-              rankings.value = resultRes.data || []
+              rankings.value = (resultRes.data || []).map(r => ({
+                ...r,
+                status: r.status || 'screening'
+              }))
               
               if (!rankings.value.length) {
                 apiError.value = { message: 'No candidates were ranked.' }
@@ -696,6 +705,40 @@ const generateQuestions = async () => {
     toast.error("Failed to generate questions")
   }
   loadingQuestions.value = false
+}
+
+const handleMoveToTalentPool = async (candidate) => {
+  if (!candidate.id) {
+    toast.error("Candidate ID not found. Cannot update status.")
+    return
+  }
+  try {
+    await axios.patch(`${API_BASE_URL}/api/candidates/${candidate.id}/status`, {
+      status: 'talent_pool'
+    })
+    candidate.status = 'talent_pool'
+    toast.success(`${candidate.name} moved to Talent Pool successfully.`)
+  } catch (err) {
+    console.error(err)
+    toast.error(err.response?.data?.detail || "Failed to move candidate to Talent Pool.")
+  }
+}
+
+const handleMoveToInterview = async (candidate) => {
+  if (!candidate.id) {
+    toast.error("Candidate ID not found. Cannot update status.")
+    return
+  }
+  try {
+    await axios.patch(`${API_BASE_URL}/api/candidates/${candidate.id}/status`, {
+      status: 'interview'
+    })
+    candidate.status = 'interview'
+    toast.success(`${candidate.name} moved to Interview successfully.`)
+  } catch (err) {
+    console.error(err)
+    toast.error(err.response?.data?.detail || "Failed to move candidate to Interview.")
+  }
 }
 </script>
 
