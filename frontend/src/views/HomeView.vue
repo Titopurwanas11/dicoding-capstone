@@ -171,6 +171,12 @@
             <h3>AI Interview Scheduler</h3>
             <p>Generate tailored screening questions and schedule video interviews automatically.</p>
           </router-link>
+
+          <router-link to="/hr-dashboard" class="feature-card">
+            <span class="feature-icon">📊</span>
+            <h3>HR Analytics Dashboard</h3>
+            <p>Track recruitment conversion funnels, job category demands, top candidate skills, and daily activity logs.</p>
+          </router-link>
         </div>
       </section>
     </div>
