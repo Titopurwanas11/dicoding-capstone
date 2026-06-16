@@ -475,11 +475,17 @@ const pieChartOptions = {
   background: rgba(148, 163, 184, 0.22);
 }
 
+.analytics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
 /* KPI Cards Layout */
 .kpis-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 @media (max-width: 1120px) {
@@ -515,10 +521,12 @@ const pieChartOptions = {
 
 .score-summary-card {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 1.15rem;
-  padding: 1.2rem 1.5rem;
-  border-radius: 20px;
+  text-align: center;
+  padding: 1.5rem 2rem;
+  border-radius: 24px;
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
@@ -530,21 +538,11 @@ const pieChartOptions = {
   box-shadow: var(--shadow-strong);
 }
 
-.score-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.35rem;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
-}
-
 .score-details {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .score-val {
