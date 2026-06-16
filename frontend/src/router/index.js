@@ -8,6 +8,8 @@ import TalentPoolView from '../views/TalentPoolView.vue'
 import InterviewSchedulerView from '../views/InterviewSchedulerView.vue'
 import HRDashboardView from '../views/HRDashboardView.vue'
 import ResumeAdvisorView from '../views/ResumeAdvisorView.vue'
+import AdminDashboardView from '../views/AdminDashboardView.vue'
+import UserManagementView from '../views/UserManagementView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import DashboardView from '../views/DashboardView.vue'
@@ -104,6 +106,26 @@ const routes = [
       requiresAuth: true,
       roles: ['hr']
     } 
+  },
+
+  // Admin Routes (Protected)
+  {
+    path: '/admin',
+    component: AdminDashboardView,
+    meta: {
+      title: 'Admin Control Center',
+      requiresAuth: true,
+      roles: ['admin']
+    }
+  },
+  {
+    path: '/admin/users',
+    component: UserManagementView,
+    meta: {
+      title: 'User Management',
+      requiresAuth: true,
+      roles: ['admin']
+    }
   }
 ]
 

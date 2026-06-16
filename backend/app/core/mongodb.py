@@ -22,6 +22,10 @@ def get_activity_collection():
     """Get the activity log collection for Recruitment Analytics."""
     return db.activity_log
 
+def get_audit_logs_collection():
+    """Get the audit logs collection for Admin tracking."""
+    return db.audit_logs
+
 def log_activity(candidate_id: str, candidate_name: str, action: str, details: str = None):
     """Log candidate activity for recruitment timeline statistics."""
     from datetime import datetime, timezone

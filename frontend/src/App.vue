@@ -97,8 +97,27 @@
               </router-link>
             </div>
           </div>
+          <!-- Admin Panel Dropdown -->
+          <div v-if="isLoggedIn && isAdminRole" class="dropdown" :class="{ 'is-open': openDropdown === 'admin' }">
+            <button
+              class="dropdown-btn admin-dropdown-btn"
+              type="button"
+              @click="toggleDropdown('admin')"
+            >
+              <span>Admin Panel</span>
+              <span class="arrow">▾</span>
+            </button>
+            <div class="dropdown-content">
+              <router-link to="/admin" active-class="is-active" @click="closeMenus">
+                Overview
+              </router-link>
+              <router-link to="/admin/users" active-class="is-active" @click="closeMenus">
+                User Management
+              </router-link>
+            </div>
+          </div>
 
-          <!-- Unauthenticated Menu Buttons -->
+
           <router-link
             v-if="!isLoggedIn"
             to="/login"
@@ -152,7 +171,7 @@
 import { computed, ref, watch, provide } from 'vue'
 import { useRoute } from 'vue-router'
 import ToastNotification from './components/ToastNotification.vue'
-import { authState, isAuthenticated, isHR, isJobSeeker, logout } from './stores/auth'
+import { authState, isAuthenticated, isHR, isJobSeeker, isAdmin, logout } from './stores/auth'
 
 const toast = ref(null)
 provide('toast', {
@@ -177,6 +196,7 @@ const currentPageTitle = computed(() => {
 const isLoggedIn = computed(() => isAuthenticated.value)
 const isHr = computed(() => isHR.value)
 const isJobSeekerRole = computed(() => isJobSeeker.value)
+const isAdminRole = computed(() => isAdmin.value)
 const userName = computed(() => authState.user?.name || 'User')
 const userInitial = computed(() => userName.value.charAt(0).toUpperCase())
 
@@ -444,6 +464,17 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
+}
+
+/* Admin dropdown special accent */
+.admin-dropdown-btn {
+  color: #DC2626 !important;
+}
+.admin-dropdown-btn:hover,
+.dropdown.is-open .admin-dropdown-btn {
+  background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.08)) !important;
+  color: #B91C1C !important;
+  box-shadow: inset 0 0 0 1px rgba(239,68,68,0.2) !important;
 }
 
 .arrow {

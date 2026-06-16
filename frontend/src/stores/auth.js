@@ -24,6 +24,7 @@ export const authState = reactive({
 export const isAuthenticated = computed(() => !!authState.token)
 export const isHR = computed(() => authState.user?.role === 'hr')
 export const isJobSeeker = computed(() => authState.user?.role === 'jobseeker')
+export const isAdmin = computed(() => authState.user?.role === 'admin')
 
 // Helper to set authorization header globally on axios
 export function setAuthHeader(token) {

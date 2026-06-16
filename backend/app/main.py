@@ -7,6 +7,7 @@ from app.api.jobs_endpoints import router as jobs_router
 from app.api.auth_endpoints import router as auth_router
 from app.api.analytics_endpoints import router as analytics_router
 from app.api.resume_advisor_endpoints import router as resume_advisor_router
+from app.api.admin_endpoints import router as admin_router
 from prometheus_client import make_asgi_app
 import os
 
@@ -47,6 +48,7 @@ app.include_router(hr_router, prefix="/api")
 app.include_router(jobs_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
 app.include_router(resume_advisor_router, prefix="/api/resume-advisor")
+app.include_router(admin_router, prefix="/api/admin")
 
 @app.get("/")
 def read_root():

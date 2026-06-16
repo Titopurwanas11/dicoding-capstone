@@ -122,6 +122,17 @@ async def login(data: LoginRequest):
             detail="Invalid email or password.",
         )
 
+    # Check if user is disabled
+    if user.get("disabled", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been disabled. Please contact an administrator.",
+        )
+
+    # Record last login timestamp
+    now_iso = datetime.now(timezone.utc).isoformat()
+    users.update_one({"email": data.email}, {"$set": {"last_login": now_iso}})
+
     token = create_access_token(data={"sub": user["email"], "role": user["role"]})
 
     return AuthResponse(
