@@ -57,6 +57,15 @@
           </div>
         </div>
 
+        <!-- Hired -->
+        <div class="stat-card glass-panel border-green">
+          <div class="stat-icon-bg green-bg">🎉</div>
+          <div class="stat-details">
+            <span class="stat-val">{{ hrStats.hired }}</span>
+            <span class="stat-lbl">Hired</span>
+          </div>
+        </div>
+
         <!-- Rejected -->
         <div class="stat-card glass-panel border-red">
           <div class="stat-icon-bg red-bg">❌</div>
@@ -475,7 +484,7 @@ onMounted(() => {
 
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 1.25rem;
 }
 
@@ -543,6 +552,11 @@ onMounted(() => {
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.green-bg {
+  background-color: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
 .stat-details {
   display: flex;
   flex-direction: column;
@@ -568,6 +582,7 @@ onMounted(() => {
 .border-cyan:hover { border-color: rgba(34, 211, 238, 0.45); }
 .border-purple:hover { border-color: rgba(139, 92, 246, 0.45); }
 .border-amber:hover { border-color: rgba(245, 158, 11, 0.45); }
+.border-green:hover { border-color: rgba(34, 197, 94, 0.45); }
 .border-red:hover { border-color: rgba(239, 68, 68, 0.45); }
 
 .stats-loading-shimmer, .stats-error-banner {
