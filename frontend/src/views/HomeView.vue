@@ -157,13 +157,19 @@
           <router-link to="/hr/rank" class="feature-card">
             <span class="feature-icon">🏆</span>
             <h3>Bulk CV Ranking</h3>
-            <p>Upload multiple CVs and rank candidates against one job description.</p>
+            <p>Upload multiple CVs and rank candidates against one job description using hybrid semantic matching.</p>
           </router-link>
 
-          <router-link to="/hr/cluster" class="feature-card">
-            <span class="feature-icon">🧩</span>
-            <h3>Candidate Clustering</h3>
-            <p>Group candidates into talent clusters based on skills and profile similarity.</p>
+          <router-link to="/hr/talent-pool" class="feature-card">
+            <span class="feature-icon">👥</span>
+            <h3>Talent Pool Management</h3>
+            <p>Store, track, and filter top-ranked candidates across different pipelines.</p>
+          </router-link>
+
+          <router-link to="/hr/interviews" class="feature-card">
+            <span class="feature-icon">📅</span>
+            <h3>AI Interview Scheduler</h3>
+            <p>Generate tailored screening questions and schedule video interviews automatically.</p>
           </router-link>
         </div>
       </section>
