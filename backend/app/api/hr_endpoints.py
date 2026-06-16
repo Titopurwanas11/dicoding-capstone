@@ -407,3 +407,90 @@ async def get_hr_stats(current_user: dict = Depends(require_role("hr"))):
     }
 
 
+class InterviewScheduleRequest(BaseModel):
+    date: str = Field(..., example="2026-06-20")
+    time: str = Field(..., example="10:00 AM")
+    meeting_link: str = Field(..., example="https://meet.google.com/abc-defg-hij")
+
+
+@router.get("/interviews", response_model=List[Dict[str, Any]])
+async def get_interviews(current_user: dict = Depends(require_role("hr"))):
+    candidates_col = get_candidates_collection()
+    results = list(candidates_col.find({"status": "interview"}).sort("created_at", -1))
+    for r in results:
+        r["id"] = str(r["_id"])
+        del r["_id"]
+        if "interview_status" not in r:
+            r["interview_status"] = "pending"
+    return results
+
+
+@router.post("/candidates/{id}/schedule")
+async def schedule_candidate_interview(
+    id: str = Path(..., description="The ID of the candidate"),
+    req: InterviewScheduleRequest = Body(...),
+    current_user: dict = Depends(require_role("hr"))
+):
+    try:
+        obj_id = ObjectId(id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid candidate ID format")
+        
+    candidates_col = get_candidates_collection()
+    result = candidates_col.update_one(
+        {"_id": obj_id, "status": "interview"},
+        {
+            "$set": {
+                "interview_status": "scheduled",
+                "interview_date": req.date,
+                "interview_time": req.time,
+                "meeting_link": req.meeting_link
+            }
+        }
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Candidate not found or status is not 'interview'")
+        
+    return {"status": "success", "message": "Interview scheduled successfully"}
+
+
+@router.post("/candidates/{id}/generate-questions")
+async def generate_candidate_questions(
+    id: str = Path(..., description="The ID of the candidate"),
+    current_user: dict = Depends(require_role("hr"))
+):
+    try:
+        obj_id = ObjectId(id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid candidate ID format")
+        
+    candidates_col = get_candidates_collection()
+    candidate = candidates_col.find_one({"_id": obj_id})
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+        
+    matched_skills = candidate.get("matched_skills", [])
+    missing_skills = candidate.get("missing_skills", [])
+    
+    questions = []
+    for skill in matched_skills[:3]:
+        questions.append(f"You have experience with {skill}. Can you describe a challenging project where you successfully utilized it?")
+        questions.append(f"What were some of the common issues you faced when working with {skill}, and how did you resolve them?")
+        
+    for skill in missing_skills[:3]:
+        questions.append(f"The role requires familiarity with {skill}, which isn't prominent in your CV. How would you approach learning or applying it?")
+        questions.append(f"Have you worked with any technologies or concepts similar to {skill}?")
+        
+    if not questions:
+        questions.append("Can you walk me through your most recent relevant project?")
+        questions.append("How do you handle learning new technologies on the job?")
+        
+    candidates_col.update_one(
+        {"_id": obj_id},
+        {"$set": {"interview_questions": questions}}
+    )
+    
+    return {"questions": questions}
+
+
+

@@ -124,15 +124,14 @@
             </div>
           </router-link>
 
-          <div class="action-card glass-panel disabled">
-            <span class="coming-soon-badge">Coming Soon</span>
+          <router-link to="/hr/interviews" class="action-card glass-panel">
             <span class="action-icon">📅</span>
             <div class="action-content-card">
               <h4>AI Interview Scheduler</h4>
               <p>Generate screening questions and schedule video interviews automatically.</p>
-              <span class="action-link-text disabled-text">Locked</span>
+              <span class="action-link-text">Open Module →</span>
             </div>
-          </div>
+          </router-link>
         </div>
 
         <!-- Job Seeker Actions -->

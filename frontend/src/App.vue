@@ -86,6 +86,9 @@
               <router-link to="/hr/talent-pool" active-class="is-active" @click="closeMenus">
                 Talent Pool
               </router-link>
+              <router-link to="/hr/interviews" active-class="is-active" @click="closeMenus">
+                Interview Scheduler
+              </router-link>
             </div>
           </div>
 
