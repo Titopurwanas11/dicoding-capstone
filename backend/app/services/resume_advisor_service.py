@@ -234,7 +234,7 @@ def generate_advisor_pdf(rec: Dict) -> bytes:
             return True
         return False
         
-    def draw_text_wrapped(text, start_x, start_y, font_size=10, font_name="helv", color=(0.1, 0.1, 0.1), is_bold=False):
+    def draw_text_wrapped(text, start_x, start_y, font_size=10, font_name="Helvetica", color=(0.1, 0.1, 0.1), is_bold=False):
         nonlocal page
         words = text.split(" ")
         lines = []
@@ -252,8 +252,8 @@ def generate_advisor_pdf(rec: Dict) -> bytes:
             lines.append(" ".join(current_line))
             
         y_pos = start_y
-        if font_name == "helv":
-            font_style = "helvb" if is_bold else "helv"
+        if font_name == "Helvetica":
+            font_style = "Helvetica-Bold" if is_bold else "Helvetica"
         else:
             font_style = font_name
         
@@ -265,11 +265,11 @@ def generate_advisor_pdf(rec: Dict) -> bytes:
         return y_pos
         
     # Title Header
-    page.insert_text((left_margin, y), "AI RESUME ADVISOR REPORT", fontsize=18, fontname="helvb", color=(0.02, 0.35, 0.52))
+    page.insert_text((left_margin, y), "AI RESUME ADVISOR REPORT", fontsize=18, fontname="Helvetica-Bold", color=(0.02, 0.35, 0.52))
     y += 26
     
     # Subtitle
-    page.insert_text((left_margin, y), "Personalized Career Analysis and Skills Roadmap", fontsize=10, fontname="helvi", color=(0.4, 0.4, 0.4))
+    page.insert_text((left_margin, y), "Personalized Career Analysis and Skills Roadmap", fontsize=10, fontname="Helvetica-Oblique", color=(0.4, 0.4, 0.4))
     y += 15
     
     # Divider line
@@ -277,7 +277,7 @@ def generate_advisor_pdf(rec: Dict) -> bytes:
     y += 25
     
     # Section 1: Overview Summary
-    page.insert_text((left_margin, y), "1. Analysis Overview", fontsize=12, fontname="helvb", color=(0.02, 0.35, 0.52))
+    page.insert_text((left_margin, y), "1. Analysis Overview", fontsize=12, fontname="Helvetica-Bold", color=(0.02, 0.35, 0.52))
     y += 18
     
     cur_score = rec.get("current_score", 0)
@@ -289,7 +289,7 @@ def generate_advisor_pdf(rec: Dict) -> bytes:
     
     # Section 2: Missing Skills Summary
     add_page_if_needed(y, 60)
-    page.insert_text((left_margin, y), "2. Skills Assessment", fontsize=12, fontname="helvb", color=(0.02, 0.35, 0.52))
+    page.insert_text((left_margin, y), "2. Skills Assessment", fontsize=12, fontname="Helvetica-Bold", color=(0.02, 0.35, 0.52))
     y += 18
     summary = rec.get("missing_skills_summary", "Assessments completed.")
     y = draw_text_wrapped(summary, left_margin + 15, y, font_size=10)
@@ -297,7 +297,7 @@ def generate_advisor_pdf(rec: Dict) -> bytes:
     
     # Section 3: Learning Roadmap
     add_page_if_needed(y, 60)
-    page.insert_text((left_margin, y), "3. Week-by-Week Learning Roadmap", fontsize=12, fontname="helvb", color=(0.02, 0.35, 0.52))
+    page.insert_text((left_margin, y), "3. Week-by-Week Learning Roadmap", fontsize=12, fontname="Helvetica-Bold", color=(0.02, 0.35, 0.52))
     y += 18
     
     learning_plan = rec.get("learning_plan", [])
@@ -314,7 +314,7 @@ def generate_advisor_pdf(rec: Dict) -> bytes:
     
     # Section 4: Resume Tips & Interview Preparation
     add_page_if_needed(y, 60)
-    page.insert_text((left_margin, y), "4. Actionable Improvements & Interview Tips", fontsize=12, fontname="helvb", color=(0.02, 0.35, 0.52))
+    page.insert_text((left_margin, y), "4. Actionable Improvements & Interview Tips", fontsize=12, fontname="Helvetica-Bold", color=(0.02, 0.35, 0.52))
     y += 18
     
     # Resume Tips
@@ -334,7 +334,7 @@ def generate_advisor_pdf(rec: Dict) -> bytes:
     
     # Section 5: Career Recommendations
     add_page_if_needed(y, 60)
-    page.insert_text((left_margin, y), "5. AI Career Insights", fontsize=12, fontname="helvb", color=(0.02, 0.35, 0.52))
+    page.insert_text((left_margin, y), "5. AI Career Insights", fontsize=12, fontname="Helvetica-Bold", color=(0.02, 0.35, 0.52))
     y += 18
     
     career = rec.get("career_recommendations", {})

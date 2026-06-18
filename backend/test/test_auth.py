@@ -34,6 +34,20 @@ class MockCollection:
             inserted_id = doc["_id"]
         return InsertResult()
 
+    def update_one(self, filter_query, update_query):
+        user = self.find_one(filter_query)
+        if user:
+            set_fields = update_query.get("$set", {})
+            user.update(set_fields)
+            matched_count = 1
+        else:
+            matched_count = 0
+        
+        class UpdateResult:
+            def __init__(self, count):
+                self.matched_count = count
+        return UpdateResult(matched_count)
+
     def create_index(self, *args, **kwargs):
         pass
 

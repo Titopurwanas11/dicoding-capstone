@@ -1,6 +1,15 @@
 from io import BytesIO
 
 
+class MockInsertResult:
+    inserted_id = "mock_candidate_id"
+
+
+class MockCandidatesCollection:
+    def insert_one(self, doc):
+        return MockInsertResult()
+
+
 def test_hr_rank(monkeypatch, client):
 
     monkeypatch.setattr(
@@ -21,6 +30,16 @@ def test_hr_rank(monkeypatch, client):
     monkeypatch.setattr(
         "app.api.hr_endpoints.match_cv_jd_hybrid",
         lambda *args, **kwargs: (["Python", "FastAPI"], ["Docker"], {"Python": 100.0, "FastAPI": 100.0, "Docker": 0.0})
+    )
+
+    monkeypatch.setattr(
+        "app.api.hr_endpoints.get_candidates_collection",
+        lambda: MockCandidatesCollection()
+    )
+
+    monkeypatch.setattr(
+        "app.api.hr_endpoints.log_activity",
+        lambda *args, **kwargs: None
     )
 
 

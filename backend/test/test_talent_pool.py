@@ -42,6 +42,19 @@ class MockCandidatesCollection:
             }
         ]
 
+    def find_one(self, query):
+        if query is None:
+            query = {}
+        for c in self.candidates:
+            match = True
+            for k, v in query.items():
+                if c.get(k) != v:
+                    match = False
+                    break
+            if match:
+                return c
+        return None
+
     def find(self, query=None):
         if query is None:
             return MockCursor(self.candidates)
